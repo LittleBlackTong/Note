@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+	"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+<title>asynchronization.html</title>
+
+</head>
+
+<body>
+
+<h1 id="异步-和-mq">异步 和 MQ</h1>
+<h3 id="一异步的常见形态">一、异步的常见形态</h3>
+<ul>
+<li>通知</li>
+<li>请求/异步响应</li>
+<li>消息 （一对多，消息被感兴趣的服务消费）</li>
+</ul>
+<h3 id="二mq应用场景">二、MQ应用场景</h3>
+<ul>
+<li>异步处理</li>
+<li>流量削峰</li>
+<li>日志处理</li>
+<li>应用解耦</li>
+</ul>
+<h3 id="三rabbitmq的基本使用">三、RabbitMq的基本使用</h3>
+<p>1.生产者 添加依赖</p>
+<pre><code>&lt;dependency&gt;
+    &lt;groupId&gt;org.springframework.cloud&lt;/groupId&gt;
+    &lt;artifactId&gt;spring-cloud-starter-amqp&lt;/artifactId&gt;
+&lt;/dependency&gt;</code></pre>
+<p>2.声明 amqpTemplate</p>
+<pre><code>@Autowired
+private AmqpTemplate amqpTemplate;</code></pre>
+<p>3.调用 convertAndSend 方法生产消息</p>
+<pre><code>amqpTemplate.convertAndSend(&quot;pushExchange&quot;,&quot;like&quot;,System.currentTimeMillis()+&quot;:like&quot;);
+</code></pre>
+<blockquote>
+<p>其中 <code>pushexchange</code> 是队列交换器 <code>like</code> 是绑定队列的 routing key</p>
+</blockquote>
+<p>4.消费者 添加依赖</p>
+<pre><code>&lt;dependency&gt;
+    &lt;groupId&gt;org.springframework.cloud&lt;/groupId&gt;
+    &lt;artifactId&gt;spring-cloud-starter-amqp&lt;/artifactId&gt;
+&lt;/dependency&gt;</code></pre>
+<p>5.声明 processMessage 方法进行消息消费</p>
+<pre><code></code></pre>
+<p><dependency> <groupId>org.springframework.cloud</groupId> <artifactId>spring-cloud-starter-amqp</artifactId> </dependency></p>
+<pre><code>
+5.声明 processMessage 方法进行消息消费
+</code></pre>
+<p><span class="citation" data-cites="RabbitListener">@RabbitListener</span>(bindings = <span class="citation" data-cites="QueueBinding">@QueueBinding</span>( exchange = <span class="citation" data-cites="Exchange">@Exchange</span>(“pushExchange”), //声明交换器 key = “comment”, //交换器与路由绑定的 routing key value = <span class="citation" data-cites="Queue">@Queue</span>(“commentQueue”) //声明队列的名称 )) public void processQueueComments(String message) { log.info(“commentReceiver message is {}”, message); } ```</p>
+
+</body>
+</html>
