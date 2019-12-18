@@ -46,12 +46,19 @@ private AmqpTemplate amqpTemplate;</code></pre>
     &lt;artifactId&gt;spring-cloud-starter-amqp&lt;/artifactId&gt;
 &lt;/dependency&gt;</code></pre>
 <p>5.声明 processMessage 方法进行消息消费</p>
-<pre><code></code></pre>
-<p><dependency> <groupId>org.springframework.cloud</groupId> <artifactId>spring-cloud-starter-amqp</artifactId> </dependency></p>
-<pre><code>
-5.声明 processMessage 方法进行消息消费
-</code></pre>
-<p><span class="citation" data-cites="RabbitListener">@RabbitListener</span>(bindings = <span class="citation" data-cites="QueueBinding">@QueueBinding</span>( exchange = <span class="citation" data-cites="Exchange">@Exchange</span>(“pushExchange”), //声明交换器 key = “comment”, //交换器与路由绑定的 routing key value = <span class="citation" data-cites="Queue">@Queue</span>(“commentQueue”) //声明队列的名称 )) public void processQueueComments(String message) { log.info(“commentReceiver message is {}”, message); } ```</p>
+<pre><code>&lt;dependency&gt;
+    &lt;groupId&gt;org.springframework.cloud&lt;/groupId&gt;
+    &lt;artifactId&gt;spring-cloud-starter-amqp&lt;/artifactId&gt;
+&lt;/dependency&gt;</code></pre>
+<p>6.声明 processMessage 方法进行消息消费</p>
+<pre><code>@RabbitListener(bindings = @QueueBinding(
+    exchange = @Exchange(&quot;pushExchange&quot;), //声明交换器
+    key = &quot;comment&quot;, //交换器与路由绑定的 routing key
+    value = @Queue(&quot;commentQueue&quot;) //声明队列的名称
+    ))
+public void processQueueComments(String message) {
+    log.info(&quot;commentReceiver message is {}&quot;, message);
+}</code></pre>
 
 </body>
 </html>

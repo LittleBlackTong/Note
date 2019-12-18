@@ -47,14 +47,13 @@ amqpTemplate.convertAndSend("pushExchange","like",System.currentTimeMillis()+":l
 5.声明 processMessage 方法进行消息消费
 
 ```
-```
 <dependency>
 	<groupId>org.springframework.cloud</groupId>
 	<artifactId>spring-cloud-starter-amqp</artifactId>
 </dependency>
 ```
 
-5.声明 processMessage 方法进行消息消费
+6.声明 processMessage 方法进行消息消费
 
 ```
 @RabbitListener(bindings = @QueueBinding(
