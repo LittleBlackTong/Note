@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+	"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+<title>Qps.html</title>
+
+</head>
+
+<body>
+
+<h1 id="什么是qps-qps-上限是多少">什么是QPS？ QPS 上限是多少？</h1>
+<hr />
+<h3 id="什么是-qps">什么是 QPS</h3>
+<blockquote>
+<p>一秒之内服务器可以处理的请求数量称为<code>服务器的 QPS</code></p>
+</blockquote>
+<h3 id="计算的两个基点">计算的两个基点</h3>
+<ol type="1">
+<li>处理每个请求的所需要的时间</li>
+<li>并发量大的情况下，服务器不能处理全部的请求</li>
+</ol>
+<blockquote>
+<p>并发 10000 请求 单个请求处理时间为 t 服务器一次可以处理 n 个请求 那么 10000 个请求的处理时间为： T=（10000/n)*t</p>
+</blockquote>
+<h3 id="qps-计算">QPS 计算</h3>
+<ol type="1">
+<li>假定服务器指标 4核 8G内存 硬盘7200转 贷款10M</li>
+</ol>
+<blockquote>
+<p>服务器一次可以处理 n 个 请求 处理每个请求的所需要的时间 t 那么QPS为： QPS=(1/t)*n</p>
+</blockquote>
+<h3 id="如何提升qps">如何提升QPS</h3>
+<blockquote>
+<p>提高服务器一次性可以处理的请求数量，降低单次请求的执行时间</p>
+</blockquote>
+
+</body>
+</html>
