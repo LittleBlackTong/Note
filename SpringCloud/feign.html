@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+	"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+<title>feign.html</title>
+
+</head>
+
+<body>
+
+<h2 id="feign-使用"># Feign 使用</h2>
+<blockquote>
+<ul>
+<li>一、声明式REST客户端（伪RPC）</li>
+<li>二、采用基于接口注解方式</li>
+</ul>
+</blockquote>
+<h3 id="使用方式">使用方式：</h3>
+<p>1.引入依赖</p>
+<pre><code>&lt;dependency&gt;
+    &lt;groupId&gt;org.springframework.cloud&lt;/groupId&gt;
+    &lt;artifactId&gt;spring-cloud-starter-openfeign&lt;/artifactId&gt;
+    &lt;optional&gt;true&lt;/optional&gt;
+&lt;/dependency&gt;</code></pre>
+<p>2.启动类添加注解</p>
+<pre><code>@EnableFeignClients(&quot;com.tongtong.*&quot;)</code></pre>
+<p>3.声明调用接口</p>
+<pre><code>@FeignClient(name = &quot;eureka-client&quot;) //其他服务名称
+public interface FeinClientMethod {
+    @GetMapping(&quot;/msg&quot;) //其他服务接口名称
+    String getMsg();
+}</code></pre>
+
+</body>
+</html>

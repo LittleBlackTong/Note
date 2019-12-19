@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+	"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+<title>config-server.html</title>
+
+</head>
+
+<body>
+
+<h1 id="configserver-实现方式">ConfigServer 实现方式</h1>
+<hr />
+<h3 id="创建项目时选择eureka-discovery-服务发现">1. 创建项目时选择eureka Discovery 服务发现</h3>
+<h3 id="启动类添加注解">2. 启动类添加注解</h3>
+<pre><code>@EnableConfigServer</code></pre>
+<h3 id="编写配置文件">3. 编写配置文件</h3>
+<pre><code>spring:
+  application:
+    name: config-server
+  cloud:
+    config:
+      server:
+        git:
+          uri: https://github.com/LittleBlackMann/Config-Server.git  //远端仓库的地址
+          username: //远端仓库的用户名
+          password: // 远端仓库的密码
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/ //注册中心地址</code></pre>
+<h3 id="github-上传配置文件">4. github 上传配置文件</h3>
+<p>如图：</p>
+<p>文件的命名格式为：applicationname-environment 方式 config-server 就会根据各个环境文件名称去寻找文件并且下载到指定的目录。</p>
+
+</body>
+</html>

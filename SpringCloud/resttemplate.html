@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+	"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+<title>resttemplate.html</title>
+
+</head>
+
+<body>
+
+<h1 id="一resttemplate">一、RestTemplate</h1>
+<h3 id="方式1.直接写死-url-通过-resttemplate-实例获取">方式1.直接写死 url 通过 resttemplate 实例获取</h3>
+<pre><code>RestTemplate restTemplate = new RestTemplate();
+String response = restTemplate.getForObject(&quot;http://localhost:8763/msg&quot;, String.class);</code></pre>
+<h3 id="方式2.-采用字符串拼接的方式通过-loadbalance-获取-host-以及-port">方式2. 采用字符串拼接的方式通过 loadbalance 获取 <code>host</code> 以及 <code>port</code></h3>
+<pre><code>ServiceInstance serviceInstance = loadBalancerClient.choose(&quot;EUREKA_CLIENT&quot;);
+String url = String.format(&quot;http://%s:%s/msg&quot;, serviceInstance.getHost(), serviceInstance.getPort());
+String response = restTemplate.getForObject(url, String.class);</code></pre>
+<h3 id="方式3.利用-loadbalance-注解进行注入">方式3.利用 <span class="citation" data-cites="loadBalance">@loadBalance</span> 注解进行注入</h3>
+<pre><code>1.restTemplate 自动实现类
+
+@Component
+public class RestTemplateConfig {
+
+    @Bean
+    @LoadBalanced
+    public RestTemplate restTemplate() {
+        return new RestTemplate();
+    }
+}
+
+
+2.自动注入
+//方式三 利用 @LoadBalanced 自动注入
+String response = restTemplate.getForObject(&quot;http://eureka-client/msg&quot;, String.class);</code></pre>
+<blockquote>
+<p>注意：消费者需要添加 pom 依赖，不然会报错无法找到实例</p>
+</blockquote>
+<pre><code>&lt;dependency&gt;
+    &lt;groupId&gt;org.springframework.cloud&lt;/groupId&gt;
+    &lt;artifactId&gt;spring-cloud-starter-eureka&lt;/artifactId&gt;
+&lt;/dependency&gt;</code></pre>
+<h1 id="二客户端负载均衡">二、客户端负载均衡</h1>
+<h3 id="ribbon">1.Ribbon</h3>
+<blockquote>
+<p>核心：1.服务发现（发现服务）2.服务选择规则（选择有效服务）3.服务监听（检测失效服务） 主要组件： 1.serverlist 2.irule 3.serverlistfilter</p>
+</blockquote>
+
+</body>
+</html>
