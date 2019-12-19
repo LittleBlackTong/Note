@@ -30,6 +30,7 @@ eureka:
 ### 4. github 上传配置文件
 
 如图：
+![文件截图](https://github.com/LittleBlackMann/Note/blob/master/Image/config-server1.png?raw=true "配置中心文件")
 
-文件的命名格式为：applicationname-environment 方式
-config-server 就会根据各个环境文件名称去寻找文件并且下载到指定的目录。
+> 文件的命名格式为：applicationname-environment 方式
+> config-server 就会根据各个环境文件名称去寻找文件并且下载到指定的目录。
