@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+	"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+<title>zuul.html</title>
+
+</head>
+
+<body>
+
+<h2 id="网关的意义和网关的要素"># 网关的意义和网关的要素</h2>
+<h3 id="一服务网关要素">一、服务网关要素</h3>
+<ul>
+<li>稳定性，高可用</li>
+<li>安全性</li>
+<li>性能</li>
+<li>并发性</li>
+</ul>
+<h3 id="二常用网关方案">二、常用网关方案</h3>
+<ul>
+<li>Nginx + Lua 优势（性能极高、事件驱动涉及、扩展性好、多个功能、多个层次）</li>
+<li>Kong 本身基于 Nginx + Lua 商业软件花钱</li>
+<li>Tyk 全 restful</li>
+<li>Zull 基于 JVM 路由负载均衡器 （认证、兼容、安全、限流、负载均衡等等….）一代性能有问题，二代有提升</li>
+</ul>
+<h3 id="三zuul-的特点">三、Zuul 的特点</h3>
+<ul>
+<li>路由+过滤器 = Zuul</li>
+<li>核心是一系列过滤器</li>
+</ul>
+<h3 id="四zuul-的四种过滤器api">四、Zuul 的四种过滤器API</h3>
+<ul>
+<li>前置（pre）</li>
+<li>后置（post）</li>
+<li>路由（route）</li>
+<li>错误（error）</li>
+</ul>
+
+</body>
+</html>
