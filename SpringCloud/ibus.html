@@ -14,14 +14,54 @@
 <h1 id="springcloud-ibus-实现">SpringCloud IBUS 实现</h1>
 <hr />
 <h3 id="一实现自动刷新">一、实现自动刷新</h3>
-<pre class="flow"><code>st=&gt;start: Start
-e=&gt;end
-op=&gt;operation: My Operation
-cond=&gt;condition: Yes or No?
- 
-st-&gt;op-&gt;cond
-cond(yes)-&gt;e
-cond(no)-&gt;op</code></pre>
+<p>IBUS 刷新配置流程： <img src="https://github.com/LittleBlackMann/Note/blob/master/Image/config-server-ibus.jpg?raw=true" title="ibus 刷新流程图" alt="ibus 刷新流程图" /></p>
+<h3 id="二ibus-自动创建mq队列">二、IBUS 自动创建MQ队列</h3>
+<p>注意:rabbitmq 如果不配置则采用默认配置</p>
+<pre><code>如果需要更改则添加配置
+spting:
+    rabbitmq:
+        host:
+        port:
+        username:
+        password:</code></pre>
+<h3 id="三config-server-端配置">三、config-server 端配置</h3>
+<p>1.添加依赖</p>
+<pre><code>&lt;dependency&gt;
+    &lt;groupId&gt;org.springframework.cloud&lt;/groupId&gt;
+    &lt;artifactId&gt;spring-cloud-starter-bus-amqp&lt;/artifactId&gt;
+&lt;/dependency&gt;</code></pre>
+<p>2.将/bus-refresh 接口暴露出来，不然无法访问，添加配置</p>
+<pre><code>management:
+  endpoints:
+    web:
+      exposure:
+        include: bus-refresh</code></pre>
+<p>三、service-client 端配置 1.添加依赖</p>
+<pre><code>&lt;dependency&gt;
+    &lt;groupId&gt;org.springframework.cloud&lt;/groupId&gt;
+    &lt;artifactId&gt;spring-cloud-starter-bus-amqp&lt;/artifactId&gt;
+    &lt;version&gt;2.2.0.RELEASE&lt;/version&gt;
+&lt;/dependency&gt;</code></pre>
+<p>2.将读取配置的位置添加注解</p>
+<pre><code>@Data
+@Component
+@ConfigurationProperties(&quot;config&quot;) //读取配置的上级名称
+@RefreshScope //添加注解刷新配置
+public class ConfigBean {
+    private Integer commentlength;
+}
+//github 上的配置
+env: dev
+spring:
+  application:
+    name: eureka-client
+server:
+  port: 8763
+config:
+  commentlength: 400</code></pre>
+<blockquote>
+<p>当上边的内容配置完成后启动服务，提交git配置文件内容，调用bus-refresh 接口即可动态刷新配置。</p>
+</blockquote>
 
 </body>
 </html>
