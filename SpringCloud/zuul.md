@@ -27,3 +27,6 @@
 - 路由（route）
 - 错误（error）
 
+### 五、Zuul 声明周期
+如图：
+![Zull 生命周期](https://github.com/LittleBlackMann/Note/blob/master/Image/zuul-core.png?raw=true "Zull 生命周期")
