@@ -77,6 +77,10 @@ Object user = redisTemplate.opsForHash().get(RedisKey.NEWSFEED_USERS_KEY, userId
 >修改想法：newsfeed 不在保存任何和用户相关的内容，但是会保留用户和群组的关联关系，需要查询成员相关内容时直接去 usercenter 获取根据逻辑进行分页处理实现正确的服务拆分。
 
 
+### 四、各种状态问题 如邀请用户，申请入群
+>目前这个状态的判断是和通知数据进行判断的，当用户拥有申请入群的通知，那么认为这个用户状态是申请中的，目前看虽然想要的功能能实现，但是感觉很恶心。用户的各种状态应该单独拿出来变为一张表，而不是通过通知来判断的。
 
-### 四、NewsFeed 服务的想法
+### 五、NewsFeed 服务的想法
 如图：
+
+![newsfeed-frameword](https://github.com/LittleBlackMann/Note/blob/master/Image/newsfeed-future.jpg?raw=true "newsfeed-framework")
