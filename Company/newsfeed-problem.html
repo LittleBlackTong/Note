@@ -86,7 +86,15 @@ Object user = redisTemplate.opsForHash().get(RedisKey.NEWSFEED_USERS_KEY, userId
 <blockquote>
 <p>目前这个状态的判断是和通知数据进行判断的，当用户拥有申请入群的通知，那么认为这个用户状态是申请中的，目前看虽然想要的功能能实现，但是感觉很恶心。用户的各种状态应该单独拿出来变为一张表，而不是通过通知来判断的。</p>
 </blockquote>
-<h3 id="五newsfeed-服务的想法">五、NewsFeed 服务的想法</h3>
+<h3 id="五分享帖文套娃问题">五、分享帖文套娃问题</h3>
+<blockquote>
+<p>分享帖文后端逻辑是将被分享的帖文包装到新的帖文中进行分享，如果帖文在分享的基础上继续分享，会认为分享的帖文是一个新的帖文，那么就会需要递归逻辑遍历获取最原始的帖文 缺点：当分享次数过多程序加载速度会出现问题，递归本身这种逻辑就在这个场景就不太好 修改想法： 将帖文分享，分享的帖文永远为初始帖文这样永远只要去被分享帖文内容就可以了。提升运行速度。</p>
+</blockquote>
+<h3 id="六评论的表结构问">六、评论的表结构问</h3>
+<blockquote>
+<p>评论表结构目前为了实现需求，在开发过程中添加了很多重复字段，可以重新设计对应的表结构达到更简洁的目的</p>
+</blockquote>
+<h3 id="七newsfeed-服务的想法">七、NewsFeed 服务的想法</h3>
 <p>如图：</p>
 <figure>
 <img src="https://github.com/LittleBlackMann/Note/blob/master/Image/newsfeed-future.jpg?raw=true" title="newsfeed-framework" alt="" /><figcaption>newsfeed-frameword</figcaption>
