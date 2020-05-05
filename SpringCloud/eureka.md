@@ -10,7 +10,7 @@
 
 （1）开启服务端注解
 ```
-@SpringBootApplication  
+@SpringBootApplication
 @EnableEurekaServer //开启 eureka 服务端注解
 public class EurekaServerApplication {
     public static void main(String[] args) {
