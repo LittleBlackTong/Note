@@ -18,16 +18,35 @@
 	
 	//通过指定的字段进行排序 倒序或者正序
 	
-	// 都是正序， 不加 reversed
-	// 都是倒序， 最后加 reversed
-	// 先是倒序（加 reversed），然后正序
-	// 先是正序（加 reversed），然后倒序（加 reversed）
-	
+	// 都是倒序
 	posts.sort(
 		Comparator.comparing(Post::getId)
 			.thenComparing(Post::getTopPost)
 			.reversed()
 	);
+	
+	// 都是正序
+	posts.sort(
+		Comparator.comparing(Post::getId)
+			.thenComparing(Post::getTopPost)
+	);
+	
+	// 先倒序后正序
+	posts.sort(
+		Comparator.comparing(Post::getId)
+			.reversed()
+			.thenComparing(Post::getTopPost)
+	);
+	
+	// 先正序后倒序
+	posts.sort(
+		Comparator.comparing(Post::getId)
+			.reversed()
+			.thenComparing(Post::getTopPost)
+			.reversed()
+	);
+	
+	
 	posts.forEach(System.out::println);
 	//最后一种描述可能不好理解 先正序然后在倒序 可以理解为 先将 第一部分内容倒序,然后在将所有的结果都倒序排列,那么第一部分的内容就得到了 负负得正的感觉变为了正序
 	
