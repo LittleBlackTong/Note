@@ -119,3 +119,49 @@ public class TestController {
 }
 ```
 
+## ThreadLocal 核心思想
+
+> 通过空间来换取时间,解决并发场景问题,也可以通过字面意思进行理解,就是通过 ThreadLocal 声明过的内容将变为线程拥有的内容
+
+## 具体实现
+
+```
+@RestController
+public class ThreadLocalController {
+
+    static HashSet<Val<Integer>> set = new HashSet<>();   //声明总集合长度
+
+    synchronized static void addSet(Val<Integer> val) {  //初始化试并发导致初始化值问题,初始化时调用 sync 防止初始化值问题
+        set.add(val);
+    }
+
+    static ThreadLocal<Val<Integer>> value = new ThreadLocal<Val<Integer>>() { //threadLocal 初始化
+        @Override
+        protected Val<Integer> initialValue() {
+            Val<Integer> val = new Val<>();
+            val.set(0);
+            //set.add(val);
+            addSet(val);
+            return val;
+        }
+    };
+
+    void add() {  //调用 add 方法将当前线程对set 内容进行累加
+        Val<Integer> v = value.get();
+        v.set(v.get() + 1);
+    }  
+
+    @RequestMapping("/get")
+    public Integer getValue() {  //通过set集合中的内容获取全部的线程累加和
+        return set.stream().map(Val::get
+        ).reduce(Integer::sum).get();
+    }
+
+    @RequestMapping("/add")
+    public Integer addValue() {
+        add();
+        return 1;
+    }
+}
+
+```
