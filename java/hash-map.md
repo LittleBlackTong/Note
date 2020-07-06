@@ -1,8 +1,158 @@
-# hashmap 实现原理
+# HashMap 实现原理
 
-### 底层 数组+链表
+### put 方法 源码以及执行过程
 
-> 哈希算法也叫做散列,就是把任意长度的(key)通过散列算法变成成固定key地址,通过这个地址进行访问的数据结构,它通过把关键码值映射到表中的一个位置来访问记录,以加快查找速度
-> 这个映射函数叫做散列函数,存放记录的素组叫做散列表
+```
+final V putVal(int hash, K key, V value, boolean onlyIfAbsent,
+                   boolean evict) {
+        Node<K,V>[] tab; Node<K,V> p; int n, i;
+        if ((tab = table) == null || (n = tab.length) == 0)
+            n = (tab = resize()).length;          // 当hashmap 中的内容为 null 时调用 resize 进行初始化
+        if ((p = tab[i = (n - 1) & hash]) == null) // 计算数组下标位置 i = (n - 1) & hash 算法 
+            tab[i] = newNode(hash, key, value, null);  
+        else {
+            Node<K,V> e; K k;
+            if (p.hash == hash &&
+                ((k = p.key) == key || (key != null && key.equals(k)))) // 判断 hash 是否已经在数组中存在
+                e = p;
+            else if (p instanceof TreeNode)  // 判断原来的节点类型是否已经是树类型了
+                e = ((TreeNode<K,V>)p).putTreeVal(this, tab, hash, key, value);
+            else {
+                for (int binCount = 0; ; ++binCount) {  // 如果是链表 那么遍历链表
+                    if ((e = p.next) == null) {
+                        p.next = newNode(hash, key, value, null);
+                        if (binCount >= TREEIFY_THRESHOLD - 1) // -1 for 1st
+                            treeifyBin(tab, hash);
+                        break;
+                    }
+                    if (e.hash == hash &&
+                        ((k = e.key) == key || (key != null && key.equals(k))))
+                        break;
+                    p = e;
+                }
+            }
+            if (e != null) { // existing mapping for key
+                V oldValue = e.value;
+                if (!onlyIfAbsent || oldValue == null)
+                    e.value = value;
+                afterNodeAccess(e);
+                return oldValue;
+            }
+        }
+        ++modCount;
+        if (++size > threshold)  // 判断容量是否大于负载因子*容量 如果是那么重新扩容
+            resize();
+        afterNodeInsertion(evict);
+        return null;
+    }
+```
+
+1. 获取 key 的 hash 值,然后调用 putVal 方法进行值的设置.
+2. 当 HashMap 中的内容为 null 时,调用 resize 方法进行初始化以及,对 hash 桶的值进行重新设置
+3. 对象数组下标计算方式,用原数组的 长度减 1 &(按位与)hash 如果该位置下标位置为 null 那么直接将 note 设置在该数组位置
+4. 如果 3.不为 null 那么判断当前 put 的对象的 hash 是否和数组中原对象的 hash 是否相同,如果 key 完全相同那么,将原数组中的节点设置给临时的 e node
+5. 如果原来的对象为 TreeNode 那么将put 数据设置到红黑树中
+6. 如果不是树结构,那么循环遍历当前数据下标对应的链表,当链表下一个元素为 null 时,将当前 put 的对象设置为链表的下一个元素,如果链表的长度大于 TREEIFY_THRESHOLD 8 时将链表更改为 红黑树,如果 hash 值和输入的相同那么跳出,并且更新原链表中的 value 值
+7. 更新完值后记录 结构更改次数 modCount ++
+8. 同时如果当前结构的大小 +1 如果 size 大于 容量* 负载因子 那么重新设置大小 resize()
+
+### resize 方法源码 及执行过程
+
+```
+ final Node<K,V>[] resize() {
+        Node<K,V>[] oldTab = table;
+        int oldCap = (oldTab == null) ? 0 : oldTab.length;
+        int oldThr = threshold;
+        int newCap, newThr = 0;
+        if (oldCap > 0) {
+            if (oldCap >= MAXIMUM_CAPACITY) {
+                threshold = Integer.MAX_VALUE;
+                return oldTab;
+            }
+            else if ((newCap = oldCap << 1) < MAXIMUM_CAPACITY &&
+                     oldCap >= DEFAULT_INITIAL_CAPACITY)
+                newThr = oldThr << 1; // double threshold
+        }
+        else if (oldThr > 0) // initial capacity was placed in threshold
+            newCap = oldThr;
+        else {               // zero initial threshold signifies using defaults
+            newCap = DEFAULT_INITIAL_CAPACITY;
+            newThr = (int)(DEFAULT_LOAD_FACTOR * DEFAULT_INITIAL_CAPACITY);
+        }
+        if (newThr == 0) {
+            float ft = (float)newCap * loadFactor;
+            newThr = (newCap < MAXIMUM_CAPACITY && ft < (float)MAXIMUM_CAPACITY ?
+                      (int)ft : Integer.MAX_VALUE);
+        }
+        threshold = newThr;
+        @SuppressWarnings({"rawtypes","unchecked"})
+        Node<K,V>[] newTab = (Node<K,V>[])new Node[newCap];
+        table = newTab;
+        if (oldTab != null) {
+            for (int j = 0; j < oldCap; ++j) {
+                Node<K,V> e;
+                if ((e = oldTab[j]) != null) {
+                    oldTab[j] = null;
+                    if (e.next == null)
+                        newTab[e.hash & (newCap - 1)] = e;
+                    else if (e instanceof TreeNode)
+                        ((TreeNode<K,V>)e).split(this, newTab, j, oldCap);
+                    else { // preserve order
+                        Node<K,V> loHead = null, loTail = null;
+                        Node<K,V> hiHead = null, hiTail = null;
+                        Node<K,V> next;
+                        do {
+                            next = e.next;
+                            if ((e.hash & oldCap) == 0) {
+                                if (loTail == null)
+                                    loHead = e;
+                                else
+                                    loTail.next = e;
+                                loTail = e;
+                            }
+                            else {
+                                if (hiTail == null)
+                                    hiHead = e;
+                                else
+                                    hiTail.next = e;
+                                hiTail = e;
+                            }
+                        } while ((e = next) != null);
+                        if (loTail != null) {
+                            loTail.next = null;
+                            newTab[j] = loHead;
+                        }
+                        if (hiTail != null) {
+                            hiTail.next = null;
+                            newTab[j + oldCap] = hiHead;
+                        }
+                    }
+                }
+            }
+        }
+        return newTab;
+    }
+```
+执行过程
+
+1. 过去原来数组的长度,如果原来数组长度大于0,那么有两种设置(1)当原来的长度大于等于最大容量那么将最大阀值设置为Integer.MAX (2) 将原来的容量扩大为 << 1, 2的幂等大小如果它在默认的桶大小和最大的桶大小之间将 将新的大小扩大
+2. 如果旧的桶大小>0 那么将新的长度设置为新的数组长度
+3. 否则新的数组长度就等于默认长度 下一次扩容长度就等于默认大小 * 负载因子,初始化下次扩容长度与初始化长度 * 负载因子
+4. 扩容之后通过循环遍历将原来的元素移动到新的数组当中.
+5. 如果 e 链表没有 next 值,那么将 e 设置到数组当中,如果不为null 判断该node 的类型是否是 树类型,如果是树类型那么调用 split()方法将note 添加到树中
+6. 如果不是链表 那么循环遍历链表中的内容,将新的内容添加到链表的尾部   1.7 头插入 1.8 以后尾插 (并发情况 1.7 的 put 方法会导致链表死循环 因此改成了尾部插入) 
+
+### 为什么长度为2的幂次
+
+1. 提升计算效率
+
+> & 运算相当于二进制 110|011=010 结果是 2 相当于取余运算效率高
+
+2. 减少 hash 碰撞 让散列表发布更均匀
+
+> 数组位置计算公式:  tab[i = (n - 1) & hash]
 
 
+### HashMap 本身并不是线程安全的
+
+1. 可以考虑 concurrentHashMap 代替
