@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+	"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+<title>interface.html</title>
+<meta http-equiv="Content-Type" content="text/html;charset=utf-8"/>
+
+</head>
+
+<body>
+
+<h1>ESS 角标接口</h1>
+
+<h3>接口地址</h3>
+
+<blockquote><p>https://uat-sunpeopleprx-2.scgdomain.com/api/teams/all/assistant/v2/badge</p></blockquote>
+
+<h3>接口参数</h3>
+
+<p>```
+{
+    &ldquo;token&rdquo;: &ldquo;4f022cc8c8b0cb221f4082b7cb2d750a&rdquo;,
+    &ldquo;timestamp&rdquo;: &ldquo;2019-10-12 12:12:13.1250213&rdquo;,
+    &ldquo;affectedUsers&rdquo;: [
+        {
+            &ldquo;adAccount&rdquo;: &ldquo;cfruit.syc01&rdquo;,
+            &ldquo;function&rdquo;: &ldquo;EPIDEMIC&rdquo;,
+            &ldquo;value&rdquo;: 1
+        },
+        {
+            &ldquo;adAccount&rdquo;: &ldquo;cfruit.wcg01&rdquo;,
+            &ldquo;function&rdquo;: &ldquo;EPIDEMIC&rdquo;,
+            &ldquo;value&rdquo;: 1
+        }</p>
+
+<pre><code>]
+</code></pre>
+
+<p>}</p>
+
+<p>```</p>
+
+<blockquote><p>token: 为接口固定 token 不需要更改
+timestamp: 为接口调用时间 注意: 手动调用该接口时注意调用时间一定要大于上一次调用时间,不然对应用户的角标不会更新
+affectedusers: 为推送用户的数组
+adAccount: 推送角标的用户名称
+function: 推送角标的类型 EPIDEMIC 为 ess 抗疫援助角标类型
+value: 为推送用户拥有对应的角标数量</p></blockquote>
+
+</body>
+</html>

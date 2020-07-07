@@ -1,0 +1,21 @@
+* 记录一次 Docker 安装 mysql 
+** 一、拉取 docker 镜像
+
+   #+BEGIN_SRC sh
+     docker pull mysql:5.7
+   #+END_SRC
+
+** 二、在宿主机上创建对应保存数据的文件夹
+
+   #+BEGIN_SRC sh
+     cd /home/crazy/office
+     mkdir mysql
+     cd mysql
+     mkdir logs data conf
+   #+END_SRC
+
+** 三、生成容器并且将本地的文件夹映射到容器当中
+
+   #+BEGIN_SRC sh
+     docker run -p 3306:3306 --name mysql -v /home/crazy/Office/Mysql/conf:/etc/mysql/conf.d -v /home/crazy/Office/Mysql/logs:/logs -v /home/crazy/Office/Mysql/data:/var/lib/mysql -e MYSQL_ROOT_PASSWORD=root -d mysql:5.7
+   #+END_SRC
