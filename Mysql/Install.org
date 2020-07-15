@@ -6,7 +6,7 @@
    #+END_SRC
 
 ** 二、在宿主机上创建对应保存数据的文件夹
-
+.
    #+BEGIN_SRC sh
      cd /home/crazy/office
      mkdir mysql

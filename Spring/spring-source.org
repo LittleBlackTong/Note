@@ -1,0 +1,7 @@
+* spring 源码相关内容
+
+** spring 初始化 bean 的过程
+
+1. 进行包扫描（调用invokBeanFactoryPostProcessors 方法完成扫描 ），创建 BeanDefinition map
+2. 根据 Definition 通过反射创建 bean 对象 放入 spring 的单例池（该单例池是 concurrentHashMap）
+3. 

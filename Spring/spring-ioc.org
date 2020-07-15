@@ -1,0 +1,10 @@
+* Spring ioc 源码分析
+
+** Spring启动容器
+
+   #+BEGIN_SRC java
+     public static void main(String[]args){
+	 ApplicationContext context = new ClassPathXmlApplicationContext("classpath:applicationfile.xml")
+	     }
+   #+END_SRC
+
