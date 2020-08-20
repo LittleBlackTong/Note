@@ -1,0 +1,18 @@
+* Kafka 的安装
+
+** 通过 docker 的方式安装 kafka
+
+1. 先安装 zookeeper 然后在安装 kafka 
+   #+BEGIN_SRC sh
+     docker pull docker.io/zookeeper
+
+
+     docker pull docker.io/wurstmeister/kafka
+
+
+     docker run -d --name zookeeper --publish 2181:2181 --volume /etc/localtime:/etc/localtime zookeeper:latest
+
+
+     docker run -d --name kafka --publish 9092:9092 --link zookeeper --env KAFKA_ZOOKEEPER_CONNECT=zookeeper:2181 --env KAFKA_ADVERTISED_HOST_NAME=47.105.63.238 --env KAFKA_ADVERTISED_PORT=9092 --volume /etc/localtime:/etc/localtime wurstmeister/kafka:latest
+
+   #+END_SRC
