@@ -1,0 +1,14 @@
+* Redis 的安装
+
+** Docker 方式安装 Redis
+
+  #+BEGIN_SRC sh
+  docker pull redis
+  #+END_SRC
+
+** 启动 Redis
+
+  #+BEGIN_SRC sh
+  docker run -itd --name redis -p 6379:6379 redis
+  #+END_SRC
+

@@ -1,0 +1,14 @@
+* ZooKeeper 安装
+
+** Docker 的方式安装
+
+   #+BEGIN_SRC sh
+   docker pull wurstmeister/zookeeper 
+   #+END_SRC
+
+** 启动 ZooKeeper
+
+   #+BEGIN_SRC sh
+   docker run -d --name zookeeper -p 2181:2181 -t wurstmeister/zookeeper
+   #+END_SRC
+

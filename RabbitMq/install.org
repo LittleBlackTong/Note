@@ -1,0 +1,23 @@
+* RabbitMq 的安装
+
+** Docker 的方式安装 RabbitMq
+
+
+   #+BEGIN_SRC sh
+   docker pull rabbitmq
+   #+END_SRC
+
+** 启动 RabbitMq
+
+
+   #+BEGIN_SRC sh
+   docker run -d -p 15672:15672  -p  5672:5672  -e RABBITMQ_DEFAULT_USER=guest -e RABBITMQ_DEFAULT_PASS=guest --name rabbitmq --hostname=rabbitmqhostone  rabbitmq:latest
+   #+END_SRC
+
+
+
+   
+
+
+
+
