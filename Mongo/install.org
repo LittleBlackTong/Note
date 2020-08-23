@@ -1,0 +1,35 @@
+* MongoDB 的安装
+** docker 拉取镜像
+
+   #+BEGIN_SRC sh
+     docker pull mongo
+   #+END_SRC
+
+** 启动 mongo 容器
+
+   #+BEGIN_SRC sh
+     docker run -d\
+     --name mongo\
+     --volume /home/crazy/Documents/Data/mongo/data:/data/db\
+     -p 27017:27017\
+     mongo --auth
+   #+END_SRC
+
+** 进入 mongo 
+
+
+   #+BEGIN_SRC sh
+     docker exec -it mongo mongo
+   #+END_SRC
+
+
+** 链接 Mongo 创建用用户
+
+
+   #+BEGIN_SRC sh
+     use admin;
+     db.createUser({ user: 'admin', pwd: 'admin', roles: [ { role: "root", db: "admin" } ] });
+   #+END_SRC
+
+
+
