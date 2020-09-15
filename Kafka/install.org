@@ -4,9 +4,38 @@
 
 1. 先安装 zookeeper 然后在安装 kafka 
    #+BEGIN_SRC sh
+     # 先拉取 zookeeper
      docker pull docker.io/zookeeper
+     # 拉取 kafka 镜像
      docker pull docker.io/wurstmeister/kafka
+     # 运行 zookeeper 设置端口 2181 默认端口
      docker run -d --name zookeeper --publish 2181:2181 --volume /etc/localtime:/etc/localtime zookeeper:latest
+     # 运行 kafka 镜像，设置连接的 zookeeper 相关连接和相关配置
      docker run  -d --name kafka -p 9092:9092 -e KAFKA_BROKER_ID=0 -e KAFKA_ZOOKEEPER_CONNECT=10.9.44.11:2181 -e KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://127.0.0.1:9092 -e KAFKA_LISTENERS=PLAINTEXT://0.0.0.0:9092 -t wurstmeister/kafka
    #+END_SRC
 
+** 通过下载安装包方式安装 windows 为例
+
+
+1. 下载 zookeeper 安装文件
+:: 地址： https://zookeeper.apache.org/releases.html
+
++ 打开 conf 文件夹，把 zoo_sample.cfg 重命名成 zoo.cfg
++ 从文本编辑器打开 zoo.cfg
++ 更改数据保存路径： dataDir 改成想要保存的路径 如： usr/home/crazy/Documents/zookeeper/data
++ 添加环境变量 ZOOKEEPER_HOME： 
++ 修改PATH 添加 %ZOOKEEPER_HOME%\bin;
++ 运行 zookeeper cmd 运行 zkserver
+
+2. 安装运行 kafka 
+:: 地址：http://kafka.apache.org/downloads.html
+
+1. 解压文件
+2. 打开 config 文件夹
+3. 编辑 server.properties
+4. 把log.dits 更改成需要保存的文件夹路径 如： usr/home/crazy/Documents/kafka/logs
+5. 新增一行 zookeeper.listeners=PLAINTEXT:/127.0.0.1:9092
+6. 进入 kafka  bin 文件夹 执行命令
+  #+BEGIN_SRC sh
+  .\bin\windows\kafka-server-start.bat .\config\server.properties
+  #+END_SRC
