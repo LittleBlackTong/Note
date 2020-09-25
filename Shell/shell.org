@@ -1,0 +1,9 @@
+** Shell 基础知识
+
+you_name="littleBlack"
+
+echo $you_name
+
+echo ${#you_name}
+
+echo ${you_name:2:99}
