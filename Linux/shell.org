@@ -12,3 +12,4 @@
 也就是当我们告诉计算机进行工作的时候，通过 shell（壳应用/外层应用）向计算机发送指令，由 kernel 来控制硬件正确工作
 
 如图：
+[[https://github.com/LittleBlackTong/Note/blob/master/Image/%25E5%25A3%25B3%25E7%25A8%258B%25E5%25BA%258F.png][壳程序图片]]
