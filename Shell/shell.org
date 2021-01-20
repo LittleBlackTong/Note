@@ -1,9 +1,441 @@
-** Shell 基础知识
+* Shell Script 基础知识
 
-you_name="littleBlack"
+** 什么是 shell scripts
 
-echo $you_name
+   shell scripts 分为两个部分，一部分是 shell ，壳程序，让我用来和系统进行沟通操作的一个接口。 script 是脚本的意思，
+   连起来来说也就是为 shell 程序编写的脚本，或者说 剧本。
 
-echo ${#you_name}
+   shell scripts 是利用 shell 功能编写的一个程序，这个程序就是一个纯文本文件，将一些 shell 的语法和指令写在里面，
+   搭配正则表达式，管线指令，和数据流重导向等功能，达到我们想要处理的目的。与 windows 上 .bat 批处理文件类似。可以
+   帮助开发人员更好的管理主机。
 
-echo ${you_name:2:99}
+** shell scripts  的好处，或者说使用场景
+
+   1.自动化管理的重要依据
+   2.简易的数据处理
+   3.连续指令单一化
+   4.跨平台支持与学习历程短
+
+** shell 脚本执行的几种方式
+
+   1. 使用绝对路径 如： /Office/ShellWorkSpace/hello-world.sh
+   2. 使用相对路径 如： ./hello-world.sh
+   3. 变量 PATH 功能: 将 shell 放在 PATH 制定的目录内，如 /usr/bin
+   4. 将shell 作为 bash 程序解释器参数来执行，如： bash hello-world.sh
+
+   说明在执行脚本之前，需要让脚本具有可执行权限，设置权限的两种方式：
+
+   1. chmod +x hello-world.sh
+   2. chmod 777 hello-world.sh   (会被揍的一种写法)
+
+** 第一个简单脚本
+
+*** 简单脚本的示例
+
+    #+BEGIN_SRC sh
+     #!/bin/bash
+     # Program:
+     #   输出一个 hello world
+     # History
+     # 2021/01/18  zt   0.1 
+     PATH=/bin/:/sbin:/usr/bin
+     export PATH
+     echo -e "hello world !"
+     exit 0
+    #+END_SRC
+
+
+*** 编写脚本的一些良好习惯
+
+    - script 的功能
+    - script 的版本信息
+    - script 的作者和联系方式
+    - script 的版权宣告方式
+    - script 的History
+    - script 特殊指令，使用绝对路径的方式来来下达
+    - script 运行时的环境变量需要宣告和设置
+
+*** 输入内容示例
+
+    #+BEGIN_SRC sh
+     #!/bin/bash
+     # Program:
+     #   输入一个喜欢的水果
+     # History
+     # 2021/01/18  zt   0.1
+     PATH=/bin/:/sbin:/usr/bin
+     export PATH
+     read -p "输入一个你喜欢的水果：" fruit
+     echo -e "你喜欢的水果是：" ${fruit}
+    #+END_SRC
+
+** 读取脚本参数
+   
+   #+BEGIN_SRC sh
+   #!/bin/bash
+     # Program:
+     #   输出脚本的如参数
+     # History
+     # 2021/01/18  zt   0.1
+     PATH=/bin/:/sbin:/usr/bin
+     export PATH
+     
+     
+   #+END_SRC
+
+
+** shell 中字符串的操作
+
+   字符串在进行拼接时，分别有对应的两种情况，一种是单引号字符串拼接，还有一种是双引号字符串拼接。
+   区别在与单引号和双引号内的表达式是否执行。
+
+   #+BEGIN_SRC sh
+     #!/bin/bash
+     # Program:
+     #   输入一个喜欢的水果
+     # History
+     # 2021/01/18  zt   0.1
+
+     PATH=/bin/:/sbin:/usr/bin
+     export PATH
+     read -p "输入一个你喜欢的水果：" fruit
+     read -p "输入一个你不喜欢的水果" fruit_not_like
+     echo -e "你喜欢的水果是：${fruit}" ${fruit_not_like}
+
+     # 单引号内的字符串拼接无法执行表达式
+     echo -e '你喜欢的水果是：${fruit} '
+
+     # 获取字符串的长度
+     echo -e ${#fruit}
+     
+     # 截取字符串
+     echo -e ${fruit:1:2}
+
+     # 查询子字符串
+     echo `expr index ${fruit} io `
+     
+   #+END_SRC
+
+** shell 数值操作
+
+*** 计算的数值的方式主要有两种，
+    方式一，通过 expr 对数值进行计算，注意，执行指令时并不是单引号，而是 ``
+    方式二，通过 $((expersion)) 的方式，这种方式更直观 推荐
+
+    #+BEGIN_SRC sh
+     #!/bin/bash
+     # Program:
+     #   数值操作计算
+     # History
+     # 2021/01/18  zt   0.1
+
+     PATH=/bin/:/sbin:/usr/bin
+     export PATH
+     read -p "输入第一个数" first_number
+     read -p "输入第二个数" second_number
+
+     total1=$((${first_number} + ${second_number}))
+     total2=`expr ${first_number} + ${second_number}`
+
+     echo -e "两个数的加和方式一" ${total1}
+     echo -e "两个数的加和方式二" ${total2}
+
+     if [ ${first_number} == ${second_number} ]
+     then
+     echo "两个数相等"
+     else
+     echo "两个数不等"
+     fi
+
+     if [ ${first_number} -gt ${second_number} ]
+     then
+     echo "第一个数大于第二个数"
+     else
+     echo "第一个数小于等于第二个数"
+     fi
+     
+    #+END_SRC
+
+    | 运算符 | 说明                 |
+    |--------+----------------------|
+    | +      | 加法运算             |
+    | -      | 减法运算             |
+    | *      | 乘法运算             |
+    | /      | 除法运算             |
+    | %      | 取余运算             |
+    | ==     | 判断连个数字是否相等 |
+    | !=     | 判断两个数字是否不等 |
+
+*** 判断符号 [] 以及判断符号
+
+    [] 代表的是判断符号，用来执行判断表达式的
+
+    | 运算符 | 说明           |
+    |--------+----------------|
+    | -eq    | 判断是否相等   |
+    | -ne    | 判断是否不相等 |
+    | -gt    | 大于           |
+    | -lt    | 小于           |
+    | -ge    | 大于等于       |
+    | -le    | 小于等于       |
+
+
+    | 运算符 | 说明   |
+    |--------+--------|
+    | -o     | 或运算 |
+    | -a     | 与运算 |
+    | !      | 取反 |
+    
+
+    #+BEGIN_SRC sh
+     #!/bin/bash
+     # Program:
+     #   数值操作计算
+     # History
+     # 2021/01/18  zt   0.1
+     
+     var="hello world"
+     echo [ ${var} == "hello world" ]
+
+    #+END_SRC
+    
+    使用判断符号 [] 需要注意
+    
+    1.在中括号 [] 内的每个元件都需要有空白键来分隔; 
+    2.在中括号内的变量，最好都以双引号括号起来; 
+    3.在中括号内的常数，最好都以单或双引号括号起来。
+
+
+** 利用 test 进行测试
+
+   test 是一个非常好用的指令，他可以帮助我们进行一些判断，
+   注意的是 直接运行 test 指令并不会直接将结果返回，而是借助 && ||  表达式来进行
+
+   
+   | 标示              | 代表的意义                                                                                       |
+   |-------------------+--------------------------------------------------------------------------------------------------|
+   | -e                | 该“文件名”是否存在?(常用)                                                                        |
+   | -f                | 该“文件名”是否存在且为文件(file)?(常用)                                                          |
+   | -d                | 该“文件名”是否存在且为目录(directory)?(常 用)                                                    |
+   | -b                | 该“文件名”是否存在且为一个 block device 设备?                                                    |
+   | -c                | 该“文件名”是否存在且为一个 character device 设 备?                                               |
+   | -S                | 该“文件名”是否存在且为一个 Socket 文件?                                                          |
+   | -p                | 该“文件名”是否存在且为一个 FIFO (pipe) 文件?                                                     |
+   | -L                | 该“文件名”是否存在且为一个链接文件?                                                              |
+   | 权限检测          |                                                                                                  |
+   | -r                | 侦测该文件名是否存在且具有“可读”的权限?                                                          |
+   | -w                | 侦测该文件名是否存在且具有“可写”的权限?                                                          |
+   | -x                | 侦测该文件名是否存在且具有“可执行”的权限?                                                        |
+   | -u                | 侦测该文件名是否存在且具有“SUID”的属性?                                                          |
+   | -g                | 侦测该文件名是否存在且具有“SGID”的属性?                                                          |
+   | -k                | 侦测该文件名是否存在且具有“Sticky bit”的属性?                                                    |
+   | -s                | 侦测该文件名是否存在且为“非空白文件”?                                                            |
+   | 文件比较          |                                                                                                  |
+   | -nt               | (newer than)判断 file1 是否比 file2 新                                                           |
+   | -ot               | (older than)判断 file1 是否比 file2 旧                                                           |
+   | -ef               | 判断 file1 与 file2 是否为同一文件，可用在判断 hard link 的判定上。                              |
+   | 整数判定          |                                                                                                  |
+   | -eq               | 两数值相等 (equal)                                                                               |
+   | -ne               | 两数值不等 (not equal)                                                                           |
+   | -gt               | n1 大于 n2 (greater than)                                                                        |
+   | -lt               | n1 小于 n2 (less than)                                                                           |
+   | -ge               | n1 大于等于 n2 (greater than or equal)                                                           |
+   | -le               | n1 小于等于 n2 (less than or equal)                                                              |
+   | 字符串判断        |                                                                                                  |
+   | test -z string    | 判定字串是否为 0 ?若 string 为空字串，则为 true                                                  |
+   | test -n string    | 判定字串是否非为 0 ?若 string 为空字串，则为 false。 -n 亦可省略                                 |
+   | test str1 == str2 | 判定 str1 是否等于 str2 ，若相等，则回传 true                                                    |
+   | test str1 != str2 | 判定 str1 是否不等于 str2 ，若相等，则回传 false                                                 |
+   | 多重条件判断      |                                                                                                  |
+   | -a                | （ and)两状况同时成立!例如 test -r file -a -x file                                               |
+   | -o                | (or)两状况任何一个成立!例如 test -r file -o -x file，则 file 具有 r 或 x 权限时，就可回传 true。 |
+   | ！                | 取反                                                                                               |
+   
+
+   如：
+
+   #+BEGIN_SRC sh
+
+    #!/bin/bash
+     # Program:
+     #   test
+     # History
+     # 2021/01/18  zt   0.1
+
+     test -e /bin/ss && echo "文件夹已存在" || echo "文件夹不存在"
+
+     test -r /bin/sh -a -x /bin/sh
+
+   #+END_SRC
+
+
+** 条件判断
+
+*** if then
+
+    if then 就是我们平时用的最多的 判断表达式，这个表达式有简单的，也有复杂的 嵌套的等等
+
+    #+BEGIN_SRC sh
+
+    #!/bin/bash
+     # Program:
+     #   if then 判断表达式
+     # History
+     # 2021/01/18  zt   0.1
+     
+     read -p "输入一个数字" number
+     if [ ${number} -gt 5 ]
+     then 
+     echo "这个数大于5"
+     elif [ ${number} -lt 5]
+     then 
+     echo "这个数小于5"
+     else
+     echo "这个数等于5"
+     fi
+
+    #+END_SRC
+
+
+    #+BEGIN_SRC sh
+    
+    read -p "请输入是否要执行 （Y/N）:" yn
+    
+    [ "${yn}" == "Y" -o "${yn}" == "y" ] && echo "OK 嘿嘿" && exit 0
+    [ "${yn}" == "N" -o "${yn}" == "n" ] && echo "Oh NO" && exit 0
+    echo "老铁你在说个啥子？" && exit 0
+
+    #+END_SRC
+
+*** case  esac
+
+    类似于 java 的 switch case 就是当 if elif 嵌套的层数比较多 判断数量较多的时候用的.
+    
+    #+BEGIN_SRC sh
+    
+     #!/bin/bash
+     # Program:
+     #   case esac
+     # History
+     # 2021/01/18  zt   0.1
+     
+     case ${1} in
+     "1")
+     echo "咿呀咿呀"
+     ;;
+     "2")
+     echo "哎呀哎呀"
+     ;;
+     *)
+     echo "其他"
+     ;;
+     esac
+     
+    #+END_SRC
+
+    一般来说 case ${变量} in 这个语法获取 ${变量的方式}大致有两种：
+    1. 直接下达式： 例如上边的示例 通过 $1 这种方式来获取的
+    2. 互动式： 通过 read 指令来让使用者输入对应的变量
+
+** 循环 
+
+*** while (不定循环)
+
+ while 循环，就是当...时，所以这种方式是 当 condition 成立时便执行。还有一种是反的，就是 当条件不成立的时候执行。 until [] do done
+ 直到 condition 成立的时候结束。
+
+ 语法为： while [condition] 
+         do 
+	 程序块 
+	 done
+ 
+     #+BEGIN_SRC sh
+    
+     #!/bin/bash
+     # Program:
+     #   case esac
+     # History
+     # 2021/01/18  zt   0.1
+
+     i=0
+     
+     while [ ${i} -lt 10 ]
+     do 
+     echo ${i}
+     i=`expr ${i} + 1`
+     done
+
+     until [ ${i} == 0]
+     do
+     echo ${i}
+     i=$(( ${i}-1 ))
+     done
+    #+END_SRC
+
+*** for (固定循环)
+
+固定循环 for 循环 可以类比成 java 当中的 foreach
+
+     #+BEGIN_SRC sh
+    
+     #!/bin/bash
+     # Program:
+     #   case esac
+     # History
+     # 2021/01/18  zt   0.1
+
+     for dog in "二哈" "萨摩" "金毛"
+     do
+     echo "这个会拆家 ${dog}"
+     done
+
+    #+END_SRC
+
+    
+    #+BEGIN_SRC sh
+    
+     #!/bin/bash
+     # Program:
+     #   ping 
+     # History
+     # 2021/01/18  zt   0.1
+     
+     network="192.168.0"
+     for sitenu in $(seq 1 100)
+     do 
+      ping -c 1 -i 1 -W 3 ${network}.${sitenu} 
+      if [ $? -eq 0];
+      then
+      echo "联通的"
+      else
+      echo "联不通"
+      fi
+      done
+
+    #+END_SRC
+
+
+** 函数定义
+
+   函数定义可以类类比 Java 中的方法，更可以理解成通过函数定义定义了一个指令
+
+   #+BEGIN_SRC sh
+
+     #!/bin/bash
+     # Program:
+     #   case esac
+     # History
+     # 2021/01/18  zt   0.1
+     
+     PATH=/bin/:/sbin:/usr/bin
+     export PATH
+
+     play 1 2
+     
+     function play(){
+        echo "游戏开始"
+	echo "游戏开始指令1 ${1}"
+	echo "游戏开始指令1" ${2}"
+     }
+
+   #+END_SRC
