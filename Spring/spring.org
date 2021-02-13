@@ -3,7 +3,7 @@
 ** 什么是 spring
 
    spring 是一种轻量级开发框架,用来提高开发人员的开发效率，提高系统可维护。其中有一些核心模块如：核心容器，数据访问，aop，测试 等。
-CoreContainer 中的Core 组件，是Spring所有组件的核心，Beans组件和Context组件是实现（反转控制）ioc 和依赖注入（di）的基础， aop 用来实现面向a切面编程的。
+CoreContainer 中的Core 组件，是Spring所有组件的核心，Beans组件和Context组件是实现（反转控制）ioc 和依赖注入（di）的基础， aop 用来实现面向切面编程的。
 
 ** 一些重要的 Spring 模块
 
