@@ -1,0 +1,143 @@
+* Redis 相关知识点
+
+** 1. 什么是 redis
+
+redis 是一个开源的 c 语言编写基于内存，可持久化的 key-value 型数据库。传统数据库遵循ACID  NoSql 遵循 CAP 定理
+** 2. redis 支持哪些数据类型
+
+*** String 字符串，set key value
+
+string 类型是 二进制安全的，string可以包含任何数据，比如 jpg 图片，或者序列化的对象，string类型是 redis 的基本数据类型，
+一个键最大能存储 512MB 
+
+*** Hash（哈希）
+
+格式  hmset name key1 value1 key2 value2
+
+Redis hash 是一个键值对集合，适合存储对象
+
+*** List （列表）
+
+简单的字符串列表，按照插入顺序排序，可以添加一个元素到列表的头部或者尾部。
+
+lpush name value
+rpush name value
+lrem  name index
+llen name 
+
+*** Set （无序集合）
+
+sadd name value 
+集合是通过 哈希表实现的，所以添加，删除查找的复杂度都是 O（1）
+
+*** Zset（sorted set： 有序集合）
+
+zadd name source value
+
+** 3. redis 持久化
+
+*** RDB 是Redis DataBase 的缩写
+
+核心功能函数是 rdbSave（生成rdb文件） 和 rdbLoad（加载文件到内存） 两个函数 
+
+配置： save  900 1   说明 900 秒内有一个 key 被修改则发起快照保存
+
+*** AOF 是 apend-only file缩写
+
+服务端-> flushAppendOnlyFile-> 磁盘中的 AOF 文件
+
+服务器执行定时任务或者函数时 flushAppendOnlyFile 函数都会被调用， 这个函数主要做两个工作
+
+aof 写入保存
+
+write： 根据条件，将 aofbuf 中的缓存写入到 aof 文件
+
+save : 根据条件，调用fsync 或 fdatasync 函数，将 aof 文件保存到磁盘
+
+
+*** 
+
+比较：
+
+1. aof 文件比 rdb 更新频率高， 优先使用aof还原数据
+2. aof 比 rdb 更安全也更大
+3. rdb 性能比 aof 好
+4. 两个都配置了 优先加载 aof
+
+aof 缺点 会使数据丢失
+
+默认是： rdb 如果需要开启的话 redis.config 中设置 appendonly 修改为 no  
+
+*** 存储结构
+
+内容是redis 通讯协议（RESP） 格式的命令文本存存储的
+
+是客户端和服务端之间的一种通信协议，客户端向服务端发送通信协议 5种
+
+1. 简单字符串  Simple String 以 + 号开头
+
+如： + 字符串 \r\n   字符串不能包含 cr 或者 LF （不允许换行）
+
+2. 错误ERROR 以 - 号 开头
+如： - 错误前缀 错误信息 \r\n  errors 与 simple String 很相似，不同的是 errors 会被当作 异常来看待
+
+3. 整数类型 Integer  以 - 号开头
+如： ： 数字 \r\n  eg： :1000\r\n 
+
+4. 大字符串 Bulk String 以 $ 美元符号开头，长度限制 512Mb
+如： $ 长字符串\r\n eg: 
+
+
+5. 数组类型 Arrays， 以 * 号开头
+
+如： * 3 \r\n $2\r\n foo\r\n$3\r\n 
+
+其中 3 代表的是数组长度
+
+*** redis 架构模式
+
+1. 单机
+简单，容量优先，无法高可用，处理能力有限
+
+2. 主从复制
+主要分为两个角色   master/slave  master 主要负责同步数据，写数据 从服务器来降低读的压力， master 节点可读可写 slave 节点只能读 
+
+配置： 配置文件中增加 slaveof 主服务IP
+
+缺点：无法保证高可用，没有解决 master 写的压力
+
+3. 哨兵
+哨兵相当于是一个 监视redis 主从服务器的监视工具，主要可以 监控，提醒，故障迁移，当主服务器故障后会重新选举一个主服务器。
+
+配置：三个实例下 分别添加 sentinel.conf
+
+port 22222
+sentinel monitor mymaster 127.0.0.1 6379 2
+daemonize yes
+
+
+spring 中 添加配置
+
+# name of Redis server  哨兵监听的Redis server的名称
+spring.redis.sentinel.master=mymaster
+# comma-separated list of host:port pairs  哨兵的配置列表
+spring.redis.sentinel.nodes=127.0.0.1:26379,127.0.0.1:26380,127.0.0.1:26381
+
+缺点: 当主服务器故障时重新选举需要花时间，可能会造成数据丢失
+
+
+
+*** redis 的淘汰策略
+
+当内存不足的时候会根据策略淘汰部分 key 保证写入成功。当淘汰策略时没有，或者没有找到合适的 key 时 会直接返回 out of memory
+
+最大配置 redis 最大缓存设置 512G
+
+6种淘汰策略
+
+1. volatile-iru: 从以设置过期时间的数据集中挑选使用少的数据淘汰
+2. volatile-ttl: 从设置已过期时间的数据集中挑选即将国旗的
+3. volation-random: 从设置已过期时间的数据集中 随机挑选淘汰
+4. allkeys-lru: 从数据集中挑选最少使用的数据淘汰
+5. allkeys-random: 从数据集中挑选任意数据淘汰
+6. no-enviction : 不淘汰任何数据
