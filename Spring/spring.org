@@ -84,6 +84,10 @@ xml->读取->Resource->解析->BeanDefinition->注册->BeanFactory
 7. DispaterServlet 就把返回的Model 传给View（视图渲染）
 8. 把View 返回给浏览器
 
+** springMvc 的主要组件
+
+
+
 ** Spring框架中用了那些设计模式
 
 + 工厂设计模式： Spring使用工厂设计模式 通过BeanFactory、ApplicationContext 创建 bean 对象
@@ -124,5 +128,61 @@ xml->读取->Resource->解析->BeanDefinition->注册->BeanFactory
 + Transactiondefinition.ISOLATION_REPEATABLE_READ: 对统一字段多次读取结果都是一直的，除非数据本身的事务修改 可以阻止脏读和不可重复读，但是会有幻读发生
 + Transactiondefinition.ISOlation_SERIALIZABLE: 相当于mysql 里面的序列化 事务变为传行的
 
+** 事务的传播机制
+
+RQUIRED spring 默认的事务传播类型； 如果当前没有事务，则自己创建一个，如果当前存在事务，则加入这个事务
+SUPPORTS； 当前存在事务，则加入当前事务，如果当前没有事务，就以非事务方法执行
+MANDATORY： 当前存在事务，则加入事务，当前不存在事务，抛出异常
+REQUIRES_NEW ; 创建一个新的事务，如果存在当前事务，则挂起事务
+NOT_SUPPORTED；以非事务方式执行，如果当前存在事务，则挂起当前事务
+NEVER； 不使用事务，如果当前存在事务抛出异常
+NESTED；如果当前存在事务，则嵌套在事务中执行，否在开启一个事务。
+
+** spring 事务什么时候会失效
+
+1. 自身方法调用， userservice 对象本身 
+2. 方法本身不是 public 的
+3. 数据库不支持事务
+4. 没有被 spring 管理
+5. 异常被吃掉 事务不会被回滚。 RunTimeException
 
 
+
+** BeanFactory 和 applicationContext 的区别
+
+1.BeanFactory 采用的是延迟加载的形式来注入 bean 的 即只有使用到 某个 bean 的时候（调用 getBean）才对该 bean 进行加载实例化。这样我们就不能发现一些存在的spring的配置
+问题。如果bean 的某一个属性没有注入， beanfactory 加载后直至第一次使用 调用 getBean 方法才会抛出异常。
+2. applicationContext 是 容器启动时，一次性创建了所有的 bean 这样就可以进行检查，属性是否依赖注入。默认实例化的都是单例的 bean 通过预载入单例 bean 确保当你需要的时候，
+就不同等待了。
+3. 相对于基本 的beanfactory，applicationContext 唯一的不足是暂用内存空间， 当应用配置的 bean 较多时启动比较慢
+4.beanfactory 通常已变成的方式被创建 applicationContext 还能以声明的方式创建， 如使用ContextLoader
+5. BeanFactory 和 ApplicationContext 都支持 BeanPostProcessor BeanFactoryPostProcessor 的使用区别是 BeanFactory 需要手动注册，Application是自动注册的。
+
+
+** springBean 的 声明周期
+
+1. 解析得到 BeanDefinition
+2. 调用 默认的构造方法进行实例化获取对象
+3. 对对象中 @Aurowired 注解进行属性注入
+4. 调用 Aware 方法对名称进行 比如 BeanNameAware BeanFactoryAware
+5. 调用 beanPostProcessor 进行初始化前的方法
+6. 调用初始化的方法
+7. 调用 beanPostProcessor 初始化后的方法，进行扩展
+8. 单例的 bean 就加入 单例池当中
+9. 使用 bean
+10. spring 容器关闭调用 disposableBean 的 destory 方法。
+
+** springBean 的自动装备，有哪些方式
+
+1.xml 通过 ref 属性进行手动设定
+2.byName 通过 bean 的属性名称进行自动装配
+3.byType 根据 bean 的类型进行自动装配
+4.constructor 根据 bean构造参数类型相同进行 自动装配
+5.audodetect 默认构造器装配，没有的化 byType 进行装配
+
+** spring springMvc springBoot 区别
+
+1. spring 是一个ioc 容器用来管理bean 使用依赖注入实现控制反转， 方便整合各种框架。
+2. springmvnc 是 针对 web 框架的一个方案 ，提供了前段控制器 servlet 用来接收请求，然后定义了一套路由策略（url 到 handle的映射） handle 结果使用试图解析器 生成视
+图给前段
+3. springboot 提供的一个快速开发工具包 又一个理念（约定大于配置）简化了配置， 让程序员更好的开发 spring+springmvc 应用。 

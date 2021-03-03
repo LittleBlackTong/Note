@@ -1,0 +1,7 @@
+* springboot 自动装配原理
+
+@import @Configuration + spring spi
+
+自动配置类由 各个starter提供，使用@configuration + @Bean 定义配置类，放到 META-INF/spring.factoryies 下使用spring spi 扫描 META-INFO/spring.factories 
+下的配置类 使用@Import 倒入自动配置类。
+

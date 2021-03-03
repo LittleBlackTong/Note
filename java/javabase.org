@@ -55,3 +55,176 @@ StringBuffer 方法都是 synchronized 修饰的
 
 
 抽象类则是为了方法的复用，如果是为了关注做了哪些事，关注方法 那么用接口
+
+** list set 区别
+
+list 有序： 按照对象进入的顺序保存，可以重复，可以有多个 null 元素对象，可以用 iterator 获取所有对象，也可以 getIndex 获取指定元素
+set 无序： 不可重复，最多允许有一个 null 元素，取元素时只能用iterator 获取所有元素
+
+** hashcode 和 equasl
+
+对象加入 hash set 时 会先计算 hashcode 值来判断对象加入的位置，看该位置是否有值，是否重复，等操作 提高效率。减少 equals 的次数
+
+1. 如果对象相等  hashcode 一定相等
+2. hashcode 相等 对象不一定相等， 有可能重写 equals 方法
+3. equals 方法重写后一定也要重写 hashcode 方法
+
+** arrayslist 和 linkList 区别
+
+arraylist: 基于动态数组，连续内存存储， 合适下标访问，扩容机制，以 1.5 倍扩容；老数组内容拷贝到新的数组，
+linklist: 基于链表 适合做 插入删除操作， 不合适查询，需要逐一进行遍历， linklist 需要使用iterator 进行遍历， 不能使用 for 循环。
+
+** hashmap 和 hashtable 的区别
+
+hashmap 方法没有 synchronized 修饰，线程不安全， hashtable 线程安全
+
+hashmap 允许 key 和 value 为 null，而 hashtable 不允许
+
+*** 底层实现
+
+jdk8 开始变为 数组；链表 + 红黑树  
+
+jdk8  concurrentHashMap 源码 看一下
+
+
+** 如何实现一个 ioc 容器
+
+1. 通过配置文件 获取包扫描的路径
+2. 通过循环遍历， 该包下边的 文件，判断是否要注入到 容器当中
+3. 通过反射将，相应的 对象实例化出来
+4. 对需要的注入的类进行依赖注入。
+
+** java 类加载器
+
+JDK 自带的三个类加载器： bootstrap Classloader ExtClassLoader， AppClasLoader
+
+
+** 什么是字节码，好处是什么？
+
+编译程序只需要面向虚拟机，生成虚拟机能够理解的代码，然后由解释器来将虚拟机代码装换位特定的系统机器码执行，这种虚拟机理解的代码叫做字节码，就是.class 文件，它不面向任何特定的处理器
+，只面向虚拟机。
+
+好处： 解决传统解释型语言运行效率低的问题，同时又保留了解释型语言可以移植的问题。
+
+** 异常体系
+
+java 中所有的异常都是来自顶级的 父类  Throwable
+Throable 下有两个子类 Exception 和 Error  比如 OOM
+Error 是程序无法处理的， 程序需要被迫终止
+Exception 不会导致程序停止， 又分为 runtimeException 和 checkedException 检查异常
+RuntimeException 常常发生在程序运行过程中，会导致程序当前线程执行失败。 checkedException常常发生在编译过程中，导致程序编译不通过。
+
+
+** GC 如何判断对象可以被回收的
+
+1. 引用计数法： 每个对象又一个引用计数，新增一个引用时计数加一，引用释放时计数减一，计数为0 时可以回收。
+:: 引用计数存在一个问题，就是循环引用时， 会导致两个对象计数无法变成0 无法被回收
+
+2. 根目录搜索法： 从 GC roots 开始向下搜索，搜索走过的路径称为引用链，当一个对象到 GC Roots 没有任何引用链时，则证明此对象是不可用的，
+那么虚拟机就判断是可回收对象。
+
+*** GC Roots 的对象有
+
+1. 虚拟机栈中引用的对象
+2. 方法区中静态属性引用的对象
+3. 方法区中常量引用的对象
+4.本地方法栈中 native 方法引用的对象
+
+:: 根目录搜索法并不是当对象没有引用后立即死亡的， 对象拥有一次自我拯救的机会。对象被系统宣告死亡需要经历两次标记，
+第一次是根目录搜索法发现对象没有与 GC 相连接的引用链，第二次是在由虚拟机自动建立 Finalizer 队列中判断是否需要执行 finalize（）方法
+如果对象重写了finalize（） 若未重写，那么将其回收，否则对象为执行过 finalize 方法，将其放入 F-queue 队列，由一低优先级线程执行该队列中的
+finalize 方法。执行finalize 方法完毕后，GC 会在此判断该对象是否可达，若不可大，则进行回收，否则对象复活，每个对象只能触发一次 finalize 方法。
+
+** 线程的生命周期，线程有哪些状态
+
+1. 线程通常有五种状态， 创建，就绪，运行，阻塞，死亡
+2.阻塞又分为三种
+（1）等待阻塞；运行的线程执行 wait 方法， 该线程会释放占用的所有资源， JVM 会把该线程放入等待池中，进入这个状态后，是不能自动唤醒的，
+必须依靠其他线程调用 notify 或者 notifyAll 方法才能唤醒，wait 是 object 类的方法
+（2）同步阻塞；运行的线程在获取对象的同步锁时，若该同步锁被别的线程占用，则 JVM 会把该线程放入锁池中。
+（3）其他阻塞；运行的线程执行sleep 或者 join 方法，或者发出 I/O 请求时，JVM 会把该线程设置为阻塞状态，当 sleep 状态超时。join 等待线程终止
+或者超时，或者I/O 处理完毕时，线程重新转入就绪状态。sleep是Thread类的方法
+
+1. 新建状态（New）；新建一个线程对象
+2. 就绪状态（Runable）；线程对象创建后，其他线程调用了该对象的 start 方法。 该状态的线程位于可运行线程
+3. 运行状态（Running）；就绪状态的线程获取了 cpu 执行程序代码
+4. 阻塞状态（Blocked）；阻塞状态是线程因为某种原因放弃 cpu 的使用权，暂时停止运行。知道线程进入就绪状态
+5. 死亡状态（Dead）；线程执行完了或者因异常退出了 run 方法，该线程生命周期结束
+
+** sleep（） wait（） join（） yield（） 的区别
+
+1.锁池
+所有需要竞争同步锁的线程都会放到锁池当中，比如当前对象的锁已经被其中一个线程得到，则其他的线程需要在这个锁池中等待，
+当前边的的线程释放同步锁后锁池中的线程去竞争同步锁，当某个线程得到后会进入就绪队列进行等待 cpu 资源分配。
+
+2. 等待池
+当我们调用 wait 方法后，线程会方到等待池当中，等待池中的线程不回去竞争同步锁，只有调用了 notify 或 notifyAll（） 之后 等待池的线程才回去
+开始竞争锁 notify（） 是随机从等待池选出一个线程放到锁池，而 notifyAll（）是将等待池的所有线程放到等待池当中。
+
+
+1. sleep 是Thread 类提供的静态本地方法， wait则是 object 类的本地方法
+2. sleep 方法不会释放锁，wait 会释放，而且加入到等待队列当中。
+
+:: sleep 就是把 cpu 的执行资格 和执行权释放出去，不再运行此线程，当定时时间结束再去取回 cpu 资源，参与 cpu 的调度，获取 cpu 资源后就可以
+继续运行了，而 sleep 时刻线程有锁，那么 sleep 不会释放该锁，而是把锁带着进入了冻结状态，也就是说其他需要这个锁的线程根本不可能获取到这个锁，
+也就是说无法执行程序。如果在睡眠时间其他线程调用了这个线程的interrup 方法那么这个线程会抛出 interruptexception异常返回，这点和wait是一样的。
+
+3. sleep 方法不依赖于同步器 synchronized，但是 wait 需要依赖 synchronized 关键字
+4. sleep 方法不需要被唤醒，但是wait 需要
+5.sleep 一般用于当前线程休眠，或者轮询，暂停操作，wait 则多用于线程之间通信。
+6.sleep 会让出 cpu 执行时间且强制执行上下文切换，而 wait 则不一定，wait 后可能还是有机会重新竞争到锁 继续执行。
+
+yield（） 执行后线程直接进入就绪状态，马上释放了 cpu 的执行权， 但是依然保留了 cpu 的执行资格，所以有可能 cpu 下次 进行线程调度还会让这个线程
+获取到执行权继续执行
+
+join（） 执行后线程进入阻塞状态， 例如在线程b 中调用a 线程的 join 那线程b 会进入到 阻塞队列，知道线程 a结束或者中断线程
+
+
+** 对于线程安全的理解
+
+多个线程，操作同一个对象，如果不用额外的同步器，进行控制，调用的这个对象结果还是正确的，那么就是线程安全的。
+
+** thread runable 的区别
+
+thread 是类， runable 是接口， thread 是实现了 runable 的
+
+** 守护线程
+
+为其他线程提供服务的一个线程， 比如GC垃圾回收线程  ，通过thread.setDaemon(true) 来设置守护线程， 这个线程的子线程也是 守护线程。
+线程池 ExecutorService 创建的线程会把守护线程转化成 用户线程 所以，想创建后台线程就不能用线程池。
+
+** threadLocal 的使用场景
+
+thread 对象含有一个 ThreadLocalMap 类型的成员变量 threadLocals 它存储本线程中所有的 ThreadLocal 对象及其对应的值
+threadLocalMap 由一个个 Entry 对象构成
+Entry 继承 WeakReference 一个 Entry 由 threadLocal 对象和 Object 构成。 由此可见，Entry 的key 是ThreadLocal 对象
+并且是一个弱引用，当没指向 key 的强引用后，该key 就会被垃圾收集器回收
+
+当执行set 方法 ThreadLocal 首先获取 当前线程对象，然后获取当前线程的 ThreadLocalMap 对象。再以当前的ThreadLocal 对象为 key 将值存储进
+ThreadLocalMap 对象中。
+
+get 方法类似 ThreadLocal 首先会获取当前对象，然后获取 threadLocalMap 对象。再以当前ThreadLocal对象为 key 获取对应的value
+
+*** 使用场景
+
+1. 对象在跨层传递的时候，比如有个参数是 controller->service->dao 每层都需要加这个参数那么就可以用 ThreadLocal
+2. 线程间的数据隔离
+3. 进行事务操作，用于存储线程事务信息
+4. 数据库连接， session 会话管理。
+
+** threadLocal 内存泄漏原因，如何避免
+
+当 threadLocal 对象设置为 null 的时候， threadLocalMap 当中的 key 会被设置为 null 但是 value 对应的线程变量之间还是强引用，导致
+无法被回收，这样就导致了内存泄漏
+
+threadLocalMap 和 thread 一样长，没有手动删除，对应的 key 就会导致内存泄露。
+
+每次使用完 ThreadLocal 都调用它的 remove（） 方法清除数据
+将 ThreadLocal 变量定义成 private static 这样一直存在ThreadLocal 强引用，也就能保证任何时候都能通过ThreadLocal 的弱引用访问到 Entry的value 
+从而清除掉。
+
+** 并发的三大特性
+
+原子性： 比如一个自增操作，其中分为 3步，获取值；加1；写入内存， 执行到第二步的时候，另一个线程就已经读取了值，导致结果错误。
+可见性： 多个线程访问同一个变量，一个线程修改了这个变量的值，其他线程能够立即看到修改的值， volatile
+有序性： 虚拟机在进行代码编译的时候，会有指令重排，这个时候会导致线程安全问题。 volatioe 本身包含了禁止指令重排的语义。

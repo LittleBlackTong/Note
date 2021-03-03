@@ -1,0 +1,59 @@
+* springmvn 知识点
+
+** springMvc 的工作原理
+
+1. 客户端发起请求 直接请求到 DispatcherServlet
+2. DispatcherServlet 根据请求信息的调用 调用handlerMapping 解析请求的 handler
+3. 解析道handler （平时的controller）之后由HandlerAdapter 适配器处理
+4. HandlerAdapter 会根据 Handler 来调用真正的处理器开始处理请求，处理业务逻辑
+5. 处理器完成作业之后，会返回一个ModelAndView 对象，Model 是返回的数据对象，View 是逻辑上的eView
+6. ViewResolver 会根据逻辑View 查找到实际 的View
+7. DispaterServlet 就把返回的Model 传给View（视图渲染）
+8. 把View 返回给浏览器
+
+** springMvc 的主要组件
+   
+1. handler； 也就是处理器，他直接对应着 mvc 中的 c 也就是 controller层，它具体的表现形式有很多，可以是类，也可以是方法。在Controller 层中的@RequestMapping
+标注的所有方法都可以看成是一个 handler 只要可以世纪处理请求就可以是 Handler
+
+1. HandlerMapping
+
+initHandlerMapping（context） 处理器映射器，根据用户请求的资源 uri 来查找 Handler 的 在springMvc 中会有很多请求，每个请求都需要一个 Handler 处理。具体接收到
+一个请求之后使用哪个 handler 进行
+
+2. HandlerAdapter
+IntiHandlerAdapters（context）适配器。因为 springmvc 中的handler可以是任意形式的，只要能处理请求就 ok 但是 servlet 需要的处理方式的结构是固定的 都是以 request 
+response 作为参数 让固定的 servlet 处理方法调用灵活的 handler 来进行处理，就是 handleradapter 做的事
+
+3. handlerExceptionResolver
+
+异常处理， 根据处理的异常 设置 modelAndView 在返回 render 方法渲染
+
+4. ViewResoulver
+
+initViewResolvers（context） ViewResolver 用来将string 类型的视图名和locale解析为 View 类型的视图。View 是用来渲染页面的 也就是程序返回的参数填入模版，
+生成 html 文件。
+
+5.RequestToViewNameTranslator
+
+initResuestToViewNameTranslator（context）viewResolver 是根据 viewName 查找 view 但有的 handler 处理完后 没有设置 view 也没有设置 viewName 这时候
+就需要从request获取viewname 了，如何重 request中获取viewName 就是RequestToViewNameTranslator 要做的事情了，RequestToViewNameTranslator在sptingmvc容器里
+值可以配置一个 所以所有request 到 viewName 的转换规则都要在一个Translator 里面全部实现。
+
+6. LocaleResolver
+
+intiLocaleResolver（context） 解析视图需要两个参数；一是视图，另一个是 Locale。视图名是处理器返回的饿 Local 是从哪里来的 ，就是LocalResolver 来做的
+LocalResolver 用于从 request解析出 Locale，Locale 就是 zh-cn 之类的表示 一个区域
+
+7. ThemeResolver
+
+initThemeResolver（context） 用于解析主题。springmvc 中一个主题对应一个 properties 文件，里面存放着跟当前主题相关的所有资源，
+
+8.MultipartResolver 
+
+InitMultipartResolver（context） 用于处理上传请求，处理方法事项Request包装成 MultipartHttpServletRequest 厚泽可以直接调用 getFile 获取File 多个文件 还可以
+getFileMap 获取 fileName-File 的map 结构
+
+9.FlashMapManager
+
+管理flashMap 的 
