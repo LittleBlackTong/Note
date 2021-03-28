@@ -78,7 +78,7 @@ aof 缺点 会使数据丢失
 
 如： + 字符串 \r\n   字符串不能包含 cr 或者 LF （不允许换行）
 
-2. 错误ERROR 以 - 号 开头
+ 2. 错误ERROR 以 - 号 开头
 如： - 错误前缀 错误信息 \r\n  errors 与 simple String 很相似，不同的是 errors 会被当作 异常来看待
 
 3. 整数类型 Integer  以 - 号开头

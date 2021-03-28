@@ -149,7 +149,7 @@ public class ThreadLocalController {
     void add() {  //调用 add 方法将当前线程对set 内容进行累加
         Val<Integer> v = value.get();
         v.set(v.get() + 1);
-    }  
+    }
 
     @RequestMapping("/get")
     public Integer getValue() {  //通过set集合中的内容获取全部的线程累加和

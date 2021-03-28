@@ -2,7 +2,7 @@
 
 > 1.Mybatise 是一个半 ORM 框架,它内部封装了 JDBC 开发时只需要关注 SQL 本身不需要花费精力去处理驱动加载,创建连接,创建statement 等繁杂过程.程序员直接编写原生态sql,可以严格控制 sql 的执行性能,灵活度高.
 > 2.Mybatise 可以通过XML 或者注解来配置和映射原生信息,将 POJO 映射成数据库中的记录,避免了几乎 JDBC 代码和手动设置参数及获取结果集合.
-> 3.通过xml 文件或者注解的方式将执行各种statement 配置起来,并且通过 java 对象和 statement,中的 sql 的动态参数进行映射,生成最终执行的 sql 最后又 mybatise 框架执行 sql映射为 java 对象并且返回.
+> 3.通过xml 文件或者注解的方式将执行各种statement 配置起来,并且通过 java 对象和 statement,中的 sql 的动态参数进行映射,生成最终执行的 sql 最后又 mybatise 框架执行 sql映射为 java 对象并且返回. 
 
 二、Mybatise 的优点
 
@@ -51,7 +51,7 @@
 > 2. mapper 接口时没有实现类的,当调用接口方法时,接口全限名+方法名拼接字符串作为 key 值,可唯一定位一个MapperStatement.在Mybatis 中,Mybatis 中,每一个标签如:<select> <insert>都会解析成一个MapperStatement对象.
 > 3.Mapper 接口里的方法,不能重载,原因是,使用全限名+方法名的保存和寻找策略,Mapper 接口的工作原理是 jdk 动态代理,Mybatis 运行时会使用JDK动态代理为Mapper接口生成代理对象proxy,代理对象会拦截接口方法,执行MapperStatement所代表的sql,然后执行返回.
 
-十、Mybatis 是如何实现分野的,分野插件的原理是什么?
+十、Mybatis 是如何实现分页的,分页的原理是什么?
 
 > Mybatis使用RouwBounds对象进行分页,他是针对ResultSet结果集合执行内存分页,而非物理分页,可以在 sql 内直接书写带有物理分页的参数来完成物理分页内容功能,也可以使用分页插件来完成物理分页.
 > 分页插件的基本原理是使用Mybatis 提供的插件接口,实现自定义插件,在插件的拦截方法内拦截待执行sql 然后重写sql 根绝 dialect 方言,添加对应的物理分页语句和物理分页参数.
