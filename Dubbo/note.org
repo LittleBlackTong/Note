@@ -1,0 +1,206 @@
+* Dubbo 基础知识
+
+** dubbo 架构
+
+[[file:~/Documents/GitHub/Note/Image/dubbo%20%E6%9E%B6%E6%9E%84.png][dubbo 架构]]
+
+** 节点角色说明
+
+| 节点      | 角色说明                             |
+|-----------+--------------------------------------|
+| provider  | 暴露服务的提供方                     |
+| consumer  | 调用远程服务的服务消费方             |
+| registry  | 服务注册与发现中心                   |
+| monitor   | 统计服务调用次数和调用时间的监控中心 |
+| container | 服务运行容器                               |
+
+*** 调用关系
+
+1. 服务容器负责启动，加载，运行服务提供者。
+2. 服务提供者在启动时，向注册中心注册自己提供的服务。
+3. 服务消费者在启动时，向注册中心订阅自己所需的服务。
+4. 注册中心返回服务提供者地址列表给消费者，如果有变更，注册中心将基于长连接推送变更数据给消费者。
+5. 服务消费者，从提供者地址列表中，基于软负载均衡算法，选一台提供者进行调用，如果调用失败，再选另一台调用。
+6. 服务消费者和提供者，在内存中累计调用次数和调用时间，定时每分钟发送一次统计数据到监控中心。
+
+
+*** 详细文档
+
+https://dubbo.apache.org/zh/docs/v2.7/user/quick-start/
+
+** springboot 整合 dubbo
+
+1. 添加相关依赖
+
+
+#+BEGIN_SRC xml
+    <!-- https://mvnrepository.com/artifact/com.alibaba/dubbo -->
+	  <dependency>
+	      <groupId>com.alibaba</groupId>
+	      <artifactId>dubbo</artifactId>
+	      <version>2.6.9</version>
+	  </dependency>
+	  <!-- https://mvnrepository.com/artifact/io.netty/netty-all -->
+	  <dependency>
+	      <groupId>io.netty</groupId>
+	      <artifactId>netty-all</artifactId>
+	      <version>5.0.0.Alpha2</version>
+	  </dependency>
+#+END_SRC
+
+:: 注意 在使用 alibaba dubbo 的时候 需要引入 netty-all 不然的话会 产生异常
+
+2. 添加对外接口
+
+
+#+BEGIN_SRC java
+
+  public interface DemoService {
+      public String sayHello(String name);
+  }
+
+#+END_SRC
+
+3. 添加 dubbo 配置文件
+
+
+#+BEGIN_SRC java
+  <?xml version="1.0" encoding="UTF-8"?>
+  <beans xmlns="http://www.springframework.org/schema/beans"
+	 xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	 xmlns:dubbo="http://code.alibabatech.com/schema/dubbo"
+	 xsi:schemaLocation="http://www.springframework.org/schema/beans
+	 http://www.springframework.org/schema/beans/spring-beans.xsd
+	 http://code.alibabatech.com/schema/dubbo
+	 http://code.alibabatech.com/schema/dubbo/dubbo.xsd">
+
+      <dubbo:application name="${dubbo.application.name}"/>
+      <!-- 注册中心的ip地址 -->
+      <dubbo:registry protocol="zookeeper" address="${dubbo.registry.address}"/>
+      <!-- 协议/端口--><!--http 协议和 dubbo 协议-->
+      <dubbo:protocol name="dubbo" port="${dubbo.protocol.port}"/>
+      <!-- 暴露的接口 -->
+      <dubbo:service ref="demoService" interface="com.demo.api.DemoService"
+		     timeout="3000"/>
+  </beans>
+#+END_SRC
+
+
+4. 添加接口对应的实现 
+
+
+#+BEGIN_SRC java
+
+  @Service("demoService")
+  public class DemoServiceImpl implements DemoService {
+
+      @Value("${server.port}")
+      String port;
+
+
+      public String sayHello(String name) {
+	  return "hello" + name + "port:" + port;
+      }
+  }
+#+END_SRC
+
+
+5. springboot 启动类添加dubbo 配置读取
+
+
+#+BEGIN_SRC java
+  @SpringBootApplication
+  @ImportResource({"classpath:spring-dubbo.xml"})
+  @EnableApolloConfig
+  public class BootApplication {
+
+      public static void main(String[] args) {
+	  SpringApplication.run(BootApplication.class, args);
+      }
+  }
+
+#+END_SRC
+
+:: 服务启动之后便会产生对应的接口
+
+
+** consumer 服务搭建
+
+1. 集成对应的 api 接口模块
+
+
+
+  <dependency>
+	      <groupId>org.example</groupId>
+	      <artifactId>api</artifactId>
+	      <version>1.0-SNAPSHOT</version>
+	  </dependency>
+
+2. 添加 dubbo.xml 配置文件
+
+
+#+BEGIN_SRC java
+
+  <?xml version="1.0" encoding="UTF-8"?>
+  <beans xmlns="http://www.springframework.org/schema/beans"
+	 xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	 xmlns:dubbo="http://code.alibabatech.com/schema/dubbo"
+	 xsi:schemaLocation="http://www.springframework.org/schema/beans
+	 http://www.springframework.org/schema/beans/spring-beans.xsd
+	 http://code.alibabatech.com/schema/dubbo
+	 http://code.alibabatech.com/schema/dubbo/dubbo.xsd">
+
+      <dubbo:application name="${dubbo.application.name}">
+	  <dubbo:parameter key="qos.enable" value="true" />
+	  <dubbo:parameter key="qos.accept.foreign.ip" value="false" />
+	  <dubbo:parameter key="qos.port" value="33333" />
+      </dubbo:application>
+      <!-- 注册中心的ip地址 -->
+      <dubbo:registry protocol="zookeeper" address="${dubbo.registry.address}"/>
+      <!-- 协议/端口-->
+      <dubbo:protocol name="dubbo" port="${dubbo.protocol.port}"/>
+      <!-- 暴露的接口 -->
+      <dubbo:reference id="demoService" interface="com.demo.api.DemoService"/>
+  </beans>
+#+END_SRC
+
+3. 启动类中添加 dubbo 配置
+
+
+#+BEGIN_SRC java
+  @SpringBootApplication
+  @ImportResource({"classpath:spring-dubbo.xml"})
+  @RestController
+  public class BootApplication {
+
+      @Autowired
+      DemoService demoService;
+
+      @RequestMapping(value = "/say", method = RequestMethod.GET)
+      public String sayHello() {
+	  return demoService.sayHello("name");
+      }
+
+      public static void main(String[] args) {
+	  SpringApplication.run(BootApplication.class, args);
+      }
+  }
+#+END_SRC
+
+
+
+:: 启动即可通过 rpc 进行接口调用，需要注意两点
+
+1. 一个是 dubbo 的注册中心， 还有是 dubbo 的协议
+dubbo 默认示例的 注册中心是 multicast  这个 在本地调试一直没成功， 如果不用注册中心可以设置成直连的方式
+还有就是使用 zookeeper 作为注册中心 本地开启 zookeeper 然后通过添加 zookeeper client 的依赖，并且在 dubbo.xml 中添加 zookeeper 的配置
+
+2. dubbo 可以设置 dubbo 协议 和 http 协议， 分别在不同的项目下架构下使用
+
+如果是同构，比如都是 java 应用 使用 dubbo 协议
+如果是异构，比如有 java 有 go 语言的 使用 http 协议
+
+**  dubbo 的详细配置
+
+https://dubbo.apache.org/zh/docs/v2.7/user/configuration/xml/
+
