@@ -21,6 +21,7 @@ JetCahe 是一个基于Java的缓存系统封装，通过了统一的 API 和注
 
 1. 添加依赖
 
+
 #+begin_src
 <dependency>
 	<groupId>com.alicp.jetcache</groupId>
@@ -35,11 +36,9 @@ JetCahe 是一个基于Java的缓存系统封装，通过了统一的 API 和注
 #+end_src
 
 2. 配置yaml文件
-
-   #+begin_src
-     jetcache:
-  #+begin_quote
-  #+end_quote
+   
+#+begin_src
+jetcache:
   areaInCacheName: false
   statIntervalMinutes: 1 #开启监控日志
   remote:
@@ -54,4 +53,314 @@ JetCahe 是一个基于Java的缓存系统封装，通过了统一的 API 和注
       host: 127.0.0.1
       port: 6379
       password: 12345
-   #+end_src
+#+end_src
+
+3.添加连接池相关配置
+
+主要是初始化 jedis 连接池
+
+#+begin_src
+
+package com.tongzhou.jetcache.config;
+
+import com.alicp.jetcache.autoconfigure.JedisPoolFactory;
+import com.alicp.jetcache.autoconfigure.RedisAutoConfiguration;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.DependsOn;
+import redis.clients.jedis.JedisPool;
+
+@Configuration
+public class JetcacheConfig {
+
+    @Bean(name = "defaultPool")
+    @DependsOn(RedisAutoConfiguration.AUTO_INIT_BEAN_NAME)
+    public JedisPoolFactory defaultPool() {
+        return new JedisPoolFactory("remote.default", JedisPool.class);
+    }
+}
+
+#+end_src
+
+** 项目中使用JetCache
+
+*** 实例化Cache
+
+实例化Cache的方式也非常的简单，通过Builder创建缓存配置之后，通过cacheManager.getOrCreateCache()就可以实例化Cache 之后Cache 的使用方式和 map 一样简单，
+
+#+begin_src
+
+package com.tongzhou.jetcache.service.impl;
+
+import com.alicp.jetcache.Cache;
+import com.alicp.jetcache.CacheManager;
+import com.alicp.jetcache.RefreshPolicy;
+import com.alicp.jetcache.support.*;
+import com.alicp.jetcache.template.QuickConfig;
+import com.tongzhou.jetcache.model.User;
+import com.tongzhou.jetcache.service.UserService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import javax.annotation.PostConstruct;
+import java.time.Duration;
+import java.util.concurrent.TimeUnit;
+
+@Service
+public class UserServiceImpl implements UserService {
+
+    @Autowired
+    private CacheManager cacheManager;
+
+    private Cache<Long, User> userCache;
+
+    @PostConstruct
+    public void init() {
+        // name用于统计信息展示名字
+        QuickConfig qc = QuickConfig.newBuilder("userCache")
+                // 配置缓存失效时间
+                .expire(Duration.ofSeconds(3))
+                .build();
+
+        userCache = cacheManager.getOrCreateCache(qc);
+    }
+
+    @Override
+    public void addUser(User user) {
+        userCache.put(user.getId(),user);
+    }
+}
+
+#+end_src
+
+
+
+*** 注解为方法缓存
+
+注解缓存主要是三个注解，分别是 @Cached、@CacheUpdate、@CacheInvalidate 分别代表的是 添加缓存，更新缓存，还有失效缓存
+
+#+begin_src
+
+package com.tongzhou.jetcache.service;
+
+import com.alicp.jetcache.anno.CacheInvalidate;
+import com.alicp.jetcache.anno.CacheRefresh;
+import com.alicp.jetcache.anno.CacheUpdate;
+import com.alicp.jetcache.anno.Cached;
+import com.tongzhou.jetcache.model.Address;
+
+import java.util.concurrent.TimeUnit;
+
+public interface AddressService {
+
+    public Long addAddress(Address address);
+
+    @CacheUpdate(name = "address.",key="#address.id",value = "#address")
+    public Long updateAddress(Address address);
+
+    @Cached(name = "address.",key="#id",expire = 5,timeUnit = TimeUnit.MINUTES)
+    public Address info(Long id);
+
+    @CacheInvalidate(name = "address.",key="#address.id")
+    public Long deleteAddress(Long id);
+}
+
+#+end_src
+
+
+** JetCache 的 Builder
+
+JetCache 中有很多 Builder，Cache实例都是通过 Builder 来进行实例化的，一些主要的配置，也都是通过 Builder 来进行配置的
+
+比如： 内存缓存 LinkedHashMapCacheBuilder
+
+#+begin_src
+
+
+package com.tongzhou.jetcache.service.impl;
+import com.alicp.jetcache.Cache;
+import com.alicp.jetcache.embedded.LinkedHashMapCacheBuilder;
+import com.tongzhou.jetcache.model.User;
+import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
+
+import java.util.concurrent.TimeUnit;
+
+@Component
+public class MemoryCacheServiceImpl {
+
+    Cache<String, User> cache = LinkedHashMapCacheBuilder.createLinkedHashMapCacheBuilder()
+            .limit(100)
+            .expireAfterWrite(200, TimeUnit.SECONDS)
+            .buildCache();
+
+    public void testMemoryCache(User user) {
+        cache.put(user.getId().toString(), user);
+    }
+
+    public User testMemoryCache(Long id) {
+        return cache.get(id.toString());
+    }
+}
+
+#+end_src
+
+RedisCacheBuilder
+
+#+begin_src
+
+GenericObjectPoolConfig pc = new GenericObjectPoolConfig();
+        pc.setMinIdle(2);
+        pc.setMaxIdle(10);
+        pc.setMaxTotal(10);
+        JedisPool pool = new JedisPool(pc, "localhost", 6379);
+  
+Cache<Long, OrderDO> orderCache = RedisCacheBuilder.createRedisCacheBuilder()
+                .keyConvertor(Fastjson2KeyConvertor.INSTANCE) // key 的转换器
+                .valueEncoder(JavaValueEncoder.INSTANCE)  // value 的编码器
+                .valueDecoder(JavaValueDecoder.INSTANCE)  // value 的解码器
+                .jedisPool(pool) // 连接池
+                .keyPrefix("orderCache") // 统一key 的前缀
+                .expireAfterWrite(200, TimeUnit.SECONDS) //超时时间
+                .buildCache();
+  
+#+end_src
+
+多级缓存
+
+#+begin_src
+  Cache multiLevelCache = MultiLevelCacheBuilder.createMultiLevelCacheBuilder()
+      .addCache(memoryCache, redisCache)
+      .expireAfterWrite(100, TimeUnit.SECONDS)
+      .buildCache();
+#+end_src
+
+** Cache的API
+
+Cache 提供了 两套 API 小写的方法在获取返回值为 null 的时候 无法判断对应的key 是否存在 还是发生了异常。 这个使用可以使用 大写的API 在CacheResult 中 可以判断是否成功了 CacheResult中提供了 isSuccess 方法
+
+#+begin_src
+
+V get(K key)
+void put(K key, V value);
+boolean putIfAbsent(K key, V value); //多级缓存MultiLevelCache不支持此方法
+boolean remove(K key);
+<T> T unwrap(Class<T> clazz); //2.2版本前，多级缓存MultiLevelCache不支持此方法
+Map<K,V> getAll(Set<? extends K> keys);
+void putAll(Map<? extends K,? extends V> map);
+void removeAll(Set<? extends K> keys);
+
+
+CacheGetResult<V> GET(K key);
+MultiGetResult<K, V> GET_ALL(Set<? extends K> keys);
+CacheResult PUT(K key, V value);
+CacheResult PUT(K key, V value, long expireAfterWrite, TimeUnit timeUnit);
+CacheResult PUT_ALL(Map<? extends K, ? extends V> map);
+CacheResult PUT_ALL(Map<? extends K, ? extends V> map, long expireAfterWrite, TimeUnit timeUnit);
+CacheResult REMOVE(K key);
+CacheResult REMOVE_ALL(Set<? extends K> keys);
+CacheResult PUT_IF_ABSENT(K key, V value, long expireAfterWrite, TimeUnit timeUnit);
+#+end_src
+
+
+特殊的API 和对应的重载方法，当值不存在的时候 可以通过 loader 对缓存进行加载，还有当加载的值为空的时候，根据参数判断是否要进行缓存。
+有一些查询逻辑很重，查出的内容为空 也有必要缓存。
+
+#+begin_src
+  V computeIfAbsent(K key, Function<K, V> loader)
+  V computeIfAbsent(K key, Function<K, V> loader, boolean cacheNullWhenLoaderReturnNull)
+#+end_src
+
+
+** 分布式锁实现
+
+Cache 提供了两个API分别是
+
+#+begin_src
+AutoReleaseLock tryLock(K key, long expire, TimeUnit timeUnit)
+boolean tryLockAndRun(K key, long expire, TimeUnit timeUnit, Runnable action)
+#+end_src
+
+第一个 tryLock 会尝试获取一个锁，如果这个key 没有锁那么 返回AutoReleaseLock，否则返回为空，
+使用逻辑
+
+#+begin_src
+
+      public void updateUser(User user) {
+        try {
+            AutoReleaseLock autoReleaseLock = lockCache.tryLock(user.getName(), 30, TimeUnit.SECONDS);
+            if (autoReleaseLock != null) {
+                // 如果不等于空 直行业务逻辑
+                Thread.sleep(5000);
+                System.out.println("操作数据库更新用户信息");
+            } else {
+                System.out.println("被锁了");
+            }
+        } catch (Exception e) {
+            System.out.println("异常了");
+        }
+    }
+#+end_src
+
+实际使用 释放锁有延时建议使用第二种
+
+#+begin_src
+      public void updateUserRun(User user) {
+        boolean result = lockCache.tryLockAndRun(user.getName(), 10, TimeUnit.SECONDS, () -> {
+            try {
+                // 如果不等于空 直行业务逻辑
+                Thread.sleep(5000);
+                System.out.println("操作数据库更新用户信息");
+            } catch (Exception e) {
+                System.out.println("异常了");
+            }
+        });
+        if(result){
+            System.out.println("执行了");
+        }else{
+            System.out.println("被锁了");
+        }
+    }
+#+end_src
+
+** 缓存的自动加载和自动刷新功能（特色）
+
+自动加载功能是通过CacheBuilder 指定一个 loader 来进行的，当cache 指定了 loader 了之后， 使用cache 调用 get 或者 getAll 无法获取值，就会使用loader 进行加载
+,自动刷新，需要创建一个 refreshPolicy 当Builder中同时指定了 loader 和 refreshPolicy 时则对缓存进行定时刷新。 自动刷新这个功能主要就是防止雪崩效应打爆数据库。
+对实时性要求不高 同时加载数据开销非常大的内容进行缓存。
+
+#+begin_src
+
+    @PostConstruct
+    public void init() {
+
+        // 设置缓存自动刷新 每五秒刷新一次 50秒没有访问就停止刷新
+        RefreshPolicy policy = RefreshPolicy.newPolicy(5, TimeUnit.SECONDS)
+                .stopRefreshAfterLastAccess(30, TimeUnit.SECONDS);
+
+        // name用于统计信息展示名字
+        QuickConfig qc = QuickConfig.newBuilder("userCache")
+                .valueDecoder(Fastjson2ValueDecoder.INSTANCE)
+                .valueEncoder(Fastjson2ValueEncoder.INSTANCE)
+                // 配置缓存失效时间
+                .expire(Duration.ofSeconds(3))
+                .loader(key->getUser((Long) key))
+                .refreshPolicy(policy)
+                .build();
+
+        userCache = cacheManager.getOrCreateCache(qc);
+    }
+
+    private User getUser(Long id){
+        User user = new User();
+        user.setId(1L);
+        user.setName("周桐");
+        user.setPhone("17610835620");
+        return user;
+    }
+#+end_src
+
+** 缓存的使用统计
+
+配置： statIntervalMinutes: 1 #开启监控日志
+
