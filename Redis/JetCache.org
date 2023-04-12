@@ -2,15 +2,56 @@
 
 ** 背景描述
 
+JetCahe 是一个基于Java的缓存系统封装，通过了统一的 API 和注解 来简化缓存使用。 JetCache 提供了比 SpringCache 更好用的注解，原生支持TTL、二级缓存、分布式自动刷新，还提供了Cache 接口用于手工缓存操作。
+现在有四个实现 RedisCache、TairCache、CaffeineCache 和一个 简易的 LinkedHashMapCache、容易添加新的实现。
+
+*** 全部特性
+
+1. 通过统一的 API 访问 Cache 系统
+2. 通过注解声明式的方法缓存、支持TTL 和二级缓存
+3. 通过注解创建并且配置 Cache 实例
+4. 针对所有Cache 实例和方法缓存自动统计
+5. Key 的生成策略和Value 的序列化策略可以配置
+6. 分布式缓存自动刷新，分布式锁
+7. 异步CacheAPI
+8. SpringBoot 的支持
+
+
+** 项目集成
+
+1. 添加依赖
+
 #+begin_src
-          <dependency>
-            <groupId>com.alicp.jetcache</groupId>
-            <artifactId>jetcache-starter-redis</artifactId>
-            <version>2.7.3</version>
-        </dependency>
-        <dependency>
-            <groupId>redis.clients</groupId>
-            <artifactId>jedis</artifactId>
-            <version>4.2.3</version>
-        </dependency>
+<dependency>
+	<groupId>com.alicp.jetcache</groupId>
+	<artifactId>jetcache-starter-redis</artifactId>
+	<version>2.7.3</version>
+</dependency>
+<dependency>
+	<groupId>redis.clients</groupId>
+	<artifactId>jedis</artifactId>
+	<version>4.2.3</version>
+</dependency>
 #+end_src
+
+2. 配置yaml文件
+
+   #+begin_src
+     jetcache:
+  #+begin_quote
+  #+end_quote
+  areaInCacheName: false
+  statIntervalMinutes: 1 #开启监控日志
+  remote:
+    default:
+      type: redis
+      keyConvertor: fastjson2
+      broadcastChannel: projectA
+      poolConfig:
+        minIdle: 5
+        maxIdle: 20
+        maxTotal: 50
+      host: 127.0.0.1
+      port: 6379
+      password: 12345
+   #+end_src
