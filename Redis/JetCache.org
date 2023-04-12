@@ -364,3 +364,4 @@ boolean tryLockAndRun(K key, long expire, TimeUnit timeUnit, Runnable action)
 
 配置： statIntervalMinutes: 1 #开启监控日志
 
+[[https:https://github.com/LittleBlackTong/Note/blob/master/Image/%E4%BC%81%E4%B8%9A%E5%BE%AE%E4%BF%A1%E6%88%AA%E5%9B%BE_202c8c33-5af0-48d5-bd77-70d38aec28ce.png?raw=true][监控]]
