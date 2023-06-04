@@ -136,7 +136,7 @@ spring.redis.sentinel.nodes=127.0.0.1:26379,127.0.0.1:26380,127.0.0.1:26381
 6种淘汰策略
 
 1. volatile-iru: 从以设置过期时间的数据集中挑选使用少的数据淘汰
-2. volatile-ttl: 从设置已过期时间的数据集中挑选即将国旗的
+2. volatile-ttl: 从设置已过期时间的数据集中挑选即将过期的
 3. volation-random: 从设置已过期时间的数据集中 随机挑选淘汰
 4. allkeys-lru: 从数据集中挑选最少使用的数据淘汰
 5. allkeys-random: 从数据集中挑选任意数据淘汰
