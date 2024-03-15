@@ -1,7 +1,204 @@
-* springboot 自动装配原理
+* springboot 
 
-@import @Configuration + spring spi
 
-自动配置类由 各个starter提供，使用@configuration + @Bean 定义配置类，放到 META-INF/spring.factoryies 下使用spring spi 扫描 META-INFO/spring.factories 
-下的配置类 使用@Import 倒入自动配置类。
+** 什么是 springboot
 
+springboot 是一个基于spring 的用于快速创建独立，生产级别，可运行的spring 应用，他采用约定大于配置的理念。
+使开发者可以手动配置大量的配置。搭建出符合生产要求，可运行的应用程序。
+Springboot 可以通过自动装配为开发人员配置各种spring 的组件，数据源，web 服务器，安全框架等，简化了开发人员
+的开发工作。此外springboot 还提供了一系列的起步依赖，web应用，缓存应用，消息队列等，springboot 还提供了可执行的
+jar 包方便用户部署在任何一个平台上。
+
+** 为什么使用 springboot
+
+简化配置：springboot 提供了许多开箱即用的配置，使开发者可以不用配置 xml 减少了开发时间。和出错的概率。
+嵌入式web容器：springboot 默认采用 tomcat 作为web 嵌入式容器，也支持jetty 和undertow，可以让应用程序独立运行
+的时候启动web容器，是应用更加轻量级。
+自动配置：springboot 可以通过自动配置的方式，自动配置需要的组件，而不需要关心配置的具体内容，专注与业务开发。
+无代码生成和xml 配置： springboot 注解采用约定大于配置的理念。避免了xml 的产生和代码生成。
+依赖管理：springboot 帮助管理者自动管理和升级程序所依赖的jar，避免了版本不一致的问题。
+
+** spring springvc 和springboot 有啥区别
+
+1.spring 是一个java 开发框架，用于创建企业级应用开发程序的，已 ioc 和di 简化开发人员对于实例的管理。
+2.spring 是spring 的一个框架，用于创建web应用的，使用mvc 模式来设计的。
+3.springboot 则是基于 spring 创建一个一个应用快速开发的程序的工具。减少开发者的工作量，可以快速独立运行的程序的。
+
+区别：
+spring 需要手动配置，而springboot 可以自动装配这些配置。
+springmvn 需要在 web.xml 中配置dispactureServlet，springboot 可以自动装配。
+springboot 可以使用内嵌的 tomcat 或者jetty 容器直接运行，springmvc 则需要部署在这些容器中。
+
+** springboot 自动装配的原理
+
+springboot 的核心理念就是约定大于配置。通过默认的配置，来减少应用开发的配置和部署。springboot 自动化配置是，根据处理
+spring 的条件化配置实现的。springboot 会根据程序的依赖关系来决定需要自动配置哪些组件。
+
+@EnableAutoConfiguration 是spring 自动装配的核心，主要原理包含几个步骤，
+1.springboot 启动时会会扫描 clashpath 下的/META-INF/spring.factory 文件并解析其中的 enableAutoconfiguration 实现类。
+2.springboot 会自动实现配置类 加载到容器中，并且对自动配置进行条件判断，不符合条件的过滤掉，符合的配置生效。
+3.springboot 会根据需要的jar 自动配置需要的bean 如 datasource 等。
+4.springboot 还提供了一些默认的配置，如端口号，上下文路径等。会根据当前应用所依赖的jar包，自动配置需要的Bea
+
+总的来说 springboot 自动装配的原理就是利用 @Enableautoconfiguration和条件注解实现了对 bean 的自动配置，并且提供了默认的配置，可以
+帮助开发者快速搭建一个基于 springboot 的web 应用程序。
+
+** springbootApplication 核心注解有哪些
+
+1. @springbootApplication
+2. @Configuration
+3. @EnableAutoConfiguration
+4. @ComponentScan 用于自动扫瞄和注册 springBean
+
+** springboot 的核心配置文件有那几个？ 他们的区别是什么？
+
+1.application.properties
+2.application.yml
+3.bootstrap.properties
+4.bootstrap.yml
+
+其中 application.properties application.yml 是应用程序的配置文件，而bootstrap.properties 和 bootStrap.yml 是用于springboot 上下文的配置文件，
+区别在于加载的优先级不一样，bootstrap配置文件的优先级更高，可以用于设置一些比较冥奥和重要的配置信息。
+
+在 spring boot 应用程序中，我们可以使用这些配置文件配置应用程序，数据库，日志等方面的信息，简化了应用程序配置过程，在springboot 中，这些配置文件的属性可以通过注解@Value 
+注入到 java 类中，
+
+** 什么是springboot starter 有哪些是常用的？
+
+springbootstarter 是一种特殊的依赖关系，他是为了方便 springboot 应用程序的快速启动和集成而设计的。一个starter 通常会包含多个依赖，以及自动装配必要的文件。
+使得我们只需要引入一个 starter依赖 就可以快速的集成相关的计数或库。
+
+常用 springbootstarter 包括
+
+1.spring-boot-starter-web 适用于 web 应用程序的starter 包含 springmvc tomcat 和springboot web 自动装配等。
+2.spring-boot-starter-data-jpa 适用于 使用 jpa 的 starter 包含hibernate spring datajpa spring ORM 等依赖。
+3.spring-boot-starter-data-redis 适用于 redis 的starter 包含jedis 客户端，和 springdata redis 等依赖。
+4.spring-boot-starter-test 适用于 测试的 starter
+5.spring-boot-starter-actuator 适用于监控和管理 springboot 应用程序的starter 
+
+** springboot-starter-parent 有什么作用
+springboot-starter-parent 是 springboot 官方提供的一个 maven 父工程，作为springboot 项目的父工程，集成了一些常用的依赖版本号，和插件的配置，
+可以方便的引入 springboot 的依赖，减少了手动配置的复杂度和出错的概率，同时也确保了springboot 之间依赖的兼容性。
+具体来说，springboot-starter-parent 主要作用有一下几个方面。
+
+1. 同一管理springboot 常用依赖的版本，确保版本兼容。
+2.配置了一些常用的 maven 插件， 如maven compiler Plugin mavne Surefire Plugin maven JAR plugin 等避免手动配置繁琐
+3.定义了一些项目构建的通用属性，如项目的编码，构建事件，java 版本等。可以在子模块中集成并重写。
+
+** 如果自定义 springboot starter
+
+自定义 springboot starter 可以让开发者将自己的库或者框架封装成一个 可重用的 starter，使得 其他开发者能够更加方便的使用和集成该库或者框架。
+
+1. 创建maven 项目 命名为 my-starter。
+2.在项目的 src/main/resources 目录下创建 META-INF/spring.factories 文件。
+
+org.springframework.boot.autoconfigure.EnableAutoConfiguration=com.example.my_starter.MyAutoConfiguration
+
+这个文件是告诉springboot 启东时自动加载自定义的 myAutoConfiguration
+
+3.创建 MyAutoConfiguration 类 并且在类加上 @Configuration注解，用于标识该类十一个配置类。
+4.在 MyAutoConfiguration中定义需要自动配置的bean
+5.打包 my-starter 项目，并将生成的 jar 包 上传到 maven 仓库中。
+6，在想其他项目中使用 自定义的 starter 只需要在项目的 pom。xml 文件中添加依赖，
+
+```
+    <dependency>
+        <groupId>com.example</groupId>
+        <artifactId>my-starter</artifactId>
+        <version>1.0.0</version>
+    </dependency>
+```
+
+然后就可以使用自定义的 starter了。
+需要注意的是 自定义starter 需要准寻一定的命名规范， 命名方式为： spring-boot-starter- {name} 其中name 是starter 的名字。
+
+** 为什么需要 spring-boot-maven-plugin
+
+springboot 提供了许多边界的功能，如自动装配，快捷开发等，但是这些功能需要额外的构建配置。为了简化构建配置的复杂度，springboot 提供了一个 maven 插件。
+springboot-maven-plug 主要用于将 springboot 应用程序打包成可执行的 java 包或者 war 包，他可以将应用程序机器依赖打包到一个可执行的 jar 文件中， 还
+可以包含一个嵌入式的 tomcat 容器 或者 jetty 容器，以便运行和部署。
+
+还提供其他功能：
+ 1.运行springboot 应用程序：可以使用 spring-boot：run 命令在开发阶段启动springboot 应用程序。
+ 2.大佬依赖项：可以使用 spring-boot：repackage 命令将依赖打包到可执行的 jar 或者 war 文件中，便于部署和运行。
+ 3.生成springboot 项目文档：可以使用 spring-boot：help 命令生成springboot 项目文档。
+
+** springboot 打包成 jar 和普通的 jar 有什么区别？
+
+Spring Boot应用打成的jar和普通的jar包在打包的方式和使用方式上有一些区别。
+
+首先，Spring Boot打成的jar包是一种可执行的jar包，包含了内嵌的Tomcat、Jetty等Web服务器，可以直接运行。而普通的jar包只包含类、资源等，需要在外部环境中手动配置Web服务器才能运行。
+
+其次，Spring Boot打成的jar包中包含了启动类的main方法，可以直接运行该jar包来启动应用程序。而普通的jar包中没有默认的main方法，需要手动指定启动类来运行应用程序。
+
+此外，Spring Boot打成的jar包还包含了一些默认的配置文件，例如application.properties或application.yml，这些文件可以用于配置应用程序的属性、数据源等信息。而普通的jar包不包含这些默认的配置文件。
+
+最后，Spring Boot打成的jar包可以使用spring-boot-maven-plugin插件来打包，该插件可以帮助我们将应用程序的依赖项、配置文件等全部打包进一个可执行的jar包中，方便部署和运行。而普通的jar包需要手动处理依赖项、配置文件等，比较繁琐。
+
+
+** springboot 实现异常处理？
+
+可以用 @ControllerAdvice 注解标识定义全局异常处理类
+```
+@ControllerAdvice
+public class GlobalExceptionHandler {
+    
+    @ExceptionHandler(value = Exception.class)
+    @ResponseBody
+    public Map<String, Object> handleException(Exception e) {
+        Map<String, Object> result = new HashMap<>();
+        result.put("status", "error");
+        result.put("message", e.getMessage());
+        return result;
+    }
+    
+    @ExceptionHandler(value = BusinessException.class)
+    @ResponseBody
+    public Map<String, Object> handleBusinessException(BusinessException e) {
+        Map<String, Object> result = new HashMap<>();
+        result.put("status", "error");
+        result.put("code", e.getCode());
+        result.put("message", e.getMessage());
+        return result;
+    }
+    
+}
+
+```
+
+** springboot 实现热部署有哪几种方式？
+
+1.使用springDevTools：springboot 提供了 springdevTools 他能够至此应用程序代码修改后自动重新加载应用程序和上下文和服务器。
+
+```
+<dependency>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-devtools</artifactId>
+    <optional>true</optional>
+</dependency>
+```
+
+2. 使用 springLoaded springloaded 十一个java 类 热替换工具，能够实现类文件的快速重载，避免了反复构建和部署的过程
+
+** springboot 的监视器是什么？
+
+中，最常用的是健康监视器，它通过检查应用程序的健康状况，可以提供有关应用程序运行状况的信息。健康监视器可以检查应用程序的数据库连接、缓存、消息队列等是否正常运行，并提供有关这些资源的详细信息。
+
+Spring Boot还提供了一个可扩展的监视器框架，允许开发人员编写自定义的监视器。开发人员可以使用该框架来检查应用程序的任何方面，并将结果报告给监视器。
+
+值得一提的是，Spring Boot的监视器是基于Actuator实现的。Actuator是一个Spring Boot子项目，提供了许多监视和管理应用程序的端点。开发人员可以使用Actuator端点来查看应用程序的运行状况、修改配置、执行诊断等操作。
+
+** springboot 可以兼容老项目吗
+
+```
+@Configuration
+@ImportResource("classpath:applicationContext.xml")
+public class AppConfig {
+    // 配置类的代码
+}
+
+```
+
+Spring Boot可以与老的Spring项目兼容，包括使用XML配置的传统Spring项目。在Spring Boot应用中，可以通过使用@ImportResource注解来加载老的XML配置文件，这样就可以让Spring Boot与传统Spring项目无缝集成。
+
+@ImportResource注解可以用于@Configuration类或@SpringBootApplication类上，它会加载指定的XML配置文件并将其纳入Spring Boot的应用上下文中。例如，以下代码将加载名为applicationContext.xml的XML配置文件：

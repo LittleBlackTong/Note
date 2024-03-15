@@ -3,7 +3,15 @@
 ** 什么是 spring
 
    spring 是一种轻量级开发框架,用来提高开发人员的开发效率，提高系统可维护。其中有一些核心模块如：核心容器，数据访问，aop，测试 等。
-CoreContainer 中的Core 组件，是Spring所有组件的核心，Beans组件和Context组件是实现（反转控制）ioc 和依赖注入（di）的基础， aop 用来实现面向切面编程的。
+CoreContainer 中的Core 组件，是Spring所有组件的核心，Beans组件和Context组件是实现（反转控制）ioc 和依赖注入（di）的基础， aop 用来实现面向
+切面编程的。
+
+** 优点
+
+通过反转控制和注入实现松耦合
+支持面向切面变成，并且把应用业务逻辑和系统服务分开
+通过切面和摸吧减少代码。
+方便集成各种优秀框架。
 
 ** 一些重要的 Spring 模块
 
@@ -19,9 +27,11 @@ CoreContainer 中的Core 组件，是Spring所有组件的核心，Beans组件�
 
 *** ioc（反转控制）
 
-:: ioc 反转控制，是一种设计思想，就是将原本程序中手动创建对象的控制，交给spring框架来管理，ioc 其他语言也有，ioc 容器是 spring 用来实现ioc的载体，ioc容器实际上是个Map
+:: ioc 反转控制，是一种设计思想，就是将原本程序中手动创建对象的控制，交给spring框架来管理，ioc 其他语言也有，ioc 容器是 spring 用来实现ioc的载体，
+ioc容器实际上是个Map
 （key，value） map中存放的就是各种对象。
-:: 将对象之间的项目依赖关系交给ioc容器来管理，并由ioc容器来完成对象注入，可以简化引用的开发，把应用从复杂的依赖 关系中解放出来，ioc 就是一个工厂，当我们需要创建一个对象的时候，
+:: 将对象之间的项目依赖关系交给ioc容器来管理，并由ioc容器来完成对象注入，可以简化引用的开发，把应用从复杂的依赖 关系中解放出来，ioc 就是一个工厂，当
+我们需要创建一个对象的时候，
 配置好配置文件\注解即可，简化了开发的难度
 
 *** ioc 的初始化过程
@@ -30,16 +40,79 @@ xml->读取->Resource->解析->BeanDefinition->注册->BeanFactory
 
 *** aop（面向切面编程）
 
-:: AOP （Aspect-Oriented-Programmint：面向切面编程） 将业务无关的，为业务模块所共同调用的逻辑，或责任，如事物处理，日志管理，权限控制）封装起来，便于减少系统中的重复代码，降低模块之间的耦合；
-:: Spring AOP 是基于动态 代理实现的，如果要嗲里的对象，实现了某个接口，那么SpringAop会使用jdk proxy 创建代理对象，这时候SpringAop  就会使用Cglib生成一个被代理对象的子类，来作为代理
+:: AOP （Aspect-Oriented-Programmint：面向切面编程） 将业务无关的，为业务模块所共同调用的逻辑，或责任，如事物处理，日志管理，权限控制）封装起来，便于
+减少系统中的重复代码，降低模块之间的耦合；
+:: Spring AOP 是基于动态 代理实现的，如果要代理的对象，实现了某个接口，那么SpringAop会使用jdk proxy 创建代理对象，这时候SpringAop  就会使用Cglib
+生成一个被代理对象的子类，来作为代理
 :: 也可以使用 AspectJ 来实现
 :: 使用AOP之后可以将一些通用功能抽出来在需要用的地方直接使用即可，大大简化了代码量，提高系统扩展性
 
-** springAop 和 AspectJ Aop 有什么区别
+** springAop（动态代理） 和 AspectJ Aop（静态代理） 有什么区别
 
 :: SpringAop 是运行是增强，而AspectJ 是编译时增强，SpringAop 基于代理实现，AspectJ 是基于字节码操作的。
 :: SpringAop 集成了AspectJ AspectJ 比SrpingAop 功能强大，SpringAop 相对简单
 :: 性能上考虑 AspectJ 性能更好
+
+** springaop 的原理
+
+springaop 实现的原理很简单，通过动态代理实现的。如果我们为 spring 的某个 bean 配置了切面，那么spring在创建这个bean 的时候，
+实际上是创建这个bena 的代理对象， 对后续bean 方法的调用实际上是调用了 代理类重写d额方法。 SpringAop 使用了 jdk 动态代理，
+和 CGLib 动态代理。
+
+** JDK 动态代理和 CGLib 动态台历的区别。
+springAop 中的动态代理主要有两种方式，JDK 动态代理和 CGLIB 动态代理。
+
+1.JDK 动态代理
+如果目标类实现了接口， springaop 就会选择使用 jdk 动态代理来代理 目标类。 代理类根据目标实现的接口动态生成，不需要自己编写。
+生成动态代理类 和目标类都实现了相同的接口。 JDK 动态代理核心的 invocationHandler 和 Proxy 类。
+
+缺点： 目标类必须实现接口，如果某个类没有实现这个接口，那么这个类就不能使用 jdk 动态代理。
+
+2. CGLIB 动态代理
+通过继承来实现。如果目标没有实现接口，那么 springAOP 就会选择使用 CGLIB 来动态代理目标类，CGLIB 可以在运行时生成类的字节，
+动态创建目标的子类，增强目标类。 如果一个类标记成 final 是无法使用 cglib 作为动态代理的。
+
+优点，目标类不需要实现特定的接口，更加灵活。
+
+** 什么时候采用那种 动态代理
+
+1. 如果目标实现了接口，默认情况下会采用 jdk 动态代理实现 AOP。
+2.如果目标对象实现了接口，可以强制使用 CGLIB 实现 AOP。
+3.如果目标对象没有实现了接口，必须使用 CGLIB 实现 AOP。
+
+** springAOP 的相关术语。
+1.切面 aspect 切面是通知和切点的结合，通知切点共同定义了切面的全部内容。
+2.链接点：指方法，springaop 中一个链接点总是代表 一个方法执行。链接点是在应用执行过程中能插入切面的一个点。
+这个点可以是调用方法，抛出异常时，甚至修改一个字段时。切面代码可以利用这些点插入到应用的正常流程之中。
+3.advice AOP 术语中被成为通知
+4.切入点，切点定义会匹配通知所要滋入的一个或多个链接点。我们通常使用明确的类和方法名称，或是利用正则表达式定义所匹配类和方法名称呢个类指定这些切点。
+5.引入，引入允许我们向现有类添加新的方法和属性。
+6.目标对象，被一个或者多个切面所通知的对象。通常是一个代理对象。
+7.织入，把切面应用到目标对象并创建新的代理对象的过程。在目标对象的声明周期。
+
+
+
+** 切面的通知类型有哪些
+
+1. 前置通知， 目标方法被调用前通知
+2. 后置通知，目标方法完成之后调用通知，
+3. 返回通知，目标方法执行之后调用通知。
+4. 异常通知， 目标方法抛出异常之后通知。
+5. 环绕通知，在通知方法调用前和调用后执行自定义逻辑
+
+** IOC 容器的初始化过程
+
+1. xml 中读取配置文件
+2. 将bean 标签解析成 beanDefinition 并且注入到 beanDefintion 实例中。
+3. 将beanDefiniton 注册到 容器 beandefinitionMap 中。
+4.beanFactory 根据 beandefinition 定义实例化bean。
+
+单例 bean 初始化以及以来注入 一般都是在容器初始化阶段进行的， 只有懒加载的 单例bean 是在应用第一次调用 getBean 时进行初始化和加载的。
+多实例的bean 启动时不实例化，即使设置了 lazy-init为 false 也没用，只有调用了 getBean（） 才进行实例化。
+loadBeanDefinitions 采用了模板模式，具体加载 bean definition 的逻辑由各个子类完成。
+
+
+
 
 ** springBean 的作用域有哪些？
 :: singleton：唯一的bean实例，，Spring 中的 bean 默认都是单例的。
@@ -73,6 +146,68 @@ xml->读取->Resource->解析->BeanDefinition->注册->BeanFactory
 检查是否是 InitializingBean 决定是否调用 afterPropertiesSet 方法 -> 检查是否配置有自定义的 init-method方法->
 调用 beanPostProcessor 后置处理器-> 注册表要的Destruction 相关回调接口->使用中-> 是否实现->DisposableBean接口
 
+
+** BeanFactory 和 factoryBean 的区别
+
+1.BeanFactory 是管理bean 的容器，spring中生成的 bean 都是由这个接口来实现管理的。
+2.FactoryBean 通常是用来创建比较复杂的bean 一般的 bean 直接用 xml 配置即可，但是如果一个bean 涉及到很多其他bean 的复杂逻辑
+直接用 xml 配置比较麻烦，这个时候考虑用 factoryBean，可以隐藏实例 复杂 bean 的细节。
+
+当配置文件中 bean 标签的 class 属性配置的实现类的 factoryBean 时，通过 getBean（）方法返回的不是 factoryBean 本身，而是调用
+FactoryBean本身，而是调用 FactoryBean#getObject 方法返回对象， 相当于factoryBean 代理了 getBean
+
+
+** BeanFactory 和 ApplicationContext 有什么区别
+beanFactory 和 applicationContext 是 spring 两大核心接口， applicationContext 是 bean factory 的子接口。
+
+两者区别如下：
+1.功能上的区别， beanFactory 是 spring里最底层的接口，包含了各种bean的定义，读取 bean 配置文档，管理bean 加载
+实例化，控制bean 声明周期的，维护bean 之间的依赖关系。
+applicationContenxt 接口作为 beanFactory 的派生，除了提供beanFactory所具有的功能外，还提供了更完整的框架功能，如集成 messageSource，
+支持国际化，同一的资源文件访问方式，同时加载多个配置文件等功能。
+
+2.加载方式的区别，beanFactory 采用的是延迟加载注入 bean 的，即只有在使用某个 bean时 调用（getBean（）） 才会对bean 实例化，这样
+就不能发现一些 spring配置的问题，如果 bena 的某个属性没有注入，beanFactory加载之后，直至第一次使用调用 getBean 方法才会抛出异常
+而 ApplicationContext 是在容器启动时，一次性创建了所有的bean 在容器启动是，我们就能发现spring 中存在的错误，这样有利于检查依赖属性
+是否注入，applicationContext 启动后预加载了 所有单例 bean 需要的时候 不需要等待创建bean ，因为他们已经创建好了。
+
+3.创建方式的区别。beanFactory 通常已变成方式被创建，spplication 还能已声明方式创建。
+
+4. 注册方式的区别， beanFactory和ApplicationConttext 都支持 beanPostProcessor，BeanFactoryPostProcessor 但是
+两者之间的区别是 BeanFactory 需要手动注册，applicationContext 是 自动注册。
+
+**  bean 注入容器的方式有哪些
+
+1. @configuration +@Bean
+2.通过包扫描特定的注解的方式
+3.@Import注解导入
+4.实现beanDefinitonRegistryPostProcessor 进行后置处理。
+5.FactoryBean 接口
+
+
+** @autowired 和 @Resource 的区别
+
+1.@autowire 是 spring 的注解。默认情况下 @Autowired 是按类型匹配的。如果需要按名称匹配的化，可以使用 @qualifier
+注解与 @Autowired 结合。@Autowired 可以传递一个 required=false  指明当 userDao 实例存在就注入不存在就忽略，
+如果必须注入，就抛出游艺场。
+
+2.@Resource 是j2ee的注解，默认按 byName 模式自动注入，@Resource 有两个中重要的属性，
+name 和 type name 属性指定 bean 的名字，type 属性指定 bean 的类型。因此使用 name 属性 则俺 byName 模式 的自动注入策略，
+如果使用type 属性，则按 byTyep模式自动注入策略，倘若即步指定 name 也不指定 type spring容器通过反射计数默认按照 byName 注入。
+
+3.@Value 注入方式 @Value 用来获取 properties 中的文件值。
+
+** @Qualifier 注解有什么作用
+
+当需要创建多个相同类型的bean 并希望仅使用属性装配其中一个bean时，可以使用@Qualifier 注解 和 @Autowired 通过指定应装配哪个 bean 来消除歧义。
+
+** Spring 有哪些设计模式
+1.工厂方法模式，bbeanFactory 本身就是一个bean 工厂
+2.单例模式，一个类仅有一个实例，
+3.模板模式，redisTemplate 模板方式实现的。
+4.代理模式，spring 的apo 就是用的动态代理。
+5.观察者模式，listener 使用的就是观察者模式。
+
 ** springMvc 的工作原理
 
 1. 客户端发起请求 直接请求到 DispatcherServlet
@@ -101,7 +236,7 @@ xml->读取->Resource->解析->BeanDefinition->注册->BeanFactory
 
 1. 作用对象不同 @Component 注解作用于类 而@Bean注解作用于方法
 2. @Component 通常是通过类路径扫描自动侦测和装载(可以用@ComponentScan注解定义要扫描的路径从中找出标示了需要装载类自动装配到Spring 的bean 容器中)。@Bean 注解通常是我们
-在该注解的方法中定义产生了这个bean @Bean 告诉了Spring 这是讴歌类的实例，当需要的时候反给我
+在该注解的方法中定义产生了这个bean @Bean 告诉了Spring 这是某个类的实例，当需要的时候反给我
 3. @Bean 注解比 Component 注解自定义性更强，而且很多地方我们只能通过@Bean 注解来注册Bean 比如当我们引用第三方类需要装配到Spring 时只能通过@Bean 来实现
 
 ** 将一个类声名为Spring 的bean 的注解有哪些？
@@ -172,7 +307,7 @@ NESTED；如果当前存在事务，则嵌套在事务中执行，否在开启�
 9. 使用 bean
 10. spring 容器关闭调用 disposableBean 的 destory 方法。
 
-** springBean 的自动装备，有哪些方式
+** springBean 的自动装配，有哪些方式
 
 1.xml 通过 ref 属性进行手动设定
 2.byName 通过 bean 的属性名称进行自动装配
@@ -186,3 +321,42 @@ NESTED；如果当前存在事务，则嵌套在事务中执行，否在开启�
 2. springmvnc 是 针对 web 框架的一个方案 ，提供了前段控制器 servlet 用来接收请求，然后定义了一套路由策略（url 到 handle的映射） handle 结果使用试图解析器 生成视
 图给前段
 3. springboot 提供的一个快速开发工具包 又一个理念（约定大于配置）简化了配置， 让程序员更好的开发 spring+springmvc 应用。 
+
+
+** spring 怎么 解决循环依赖的问题
+
+首先有两种 bean的注入方式。
+构造器注入 和 属性注入。 对于构造器注入的以来循环 spring 处理不了，会直接抛出异常。
+对于属性注入的循环以来（单例模式下） 通过三级缓存处理循环依赖的。
+而非单例对象的循环以来，则无法处理。
+下面分析单例模式下属性注入的循环以来是怎么处理的
+首先 spring 单例对象的初始化 大略分成三步：
+
+1. createBeanInstance：实例化bean 用构造方法创建对象，为对象分配内存
+2. populateBean 进行依赖注入。
+3.initalizeBean 初始化bean。
+
+spring 为了解决单例的循环问题，使用了三级缓存：
+
+singletonObject： 完成了初始化单例对象 map beanname-> bean instance
+earlySingletonObjects： 完成实例化未锁初始化单例 对象 map beanname-> bean instance
+singletonFactories: 单例对象工厂 map beanName-> ObjectFactory 
+
+1.首先 A 先完成 实例化，并且将自己添加到 singletonFactories 中，
+2.接着进行以来注入，发现自己以来 B 此时尝试获取 get（B）
+3.发现B 还没有被实例化， 对 B 进行实例化
+4. B 实例化发现自己以来对象 A 尝试获取get（A） 尝试一级缓存 singleObjects 和 二级缓存 earlySingletonObjects,每找到，尝试三级缓存，
+A初始化的时候把自己添加到 三级缓存中了所以 B 对象拿到了A 对象，然后将 A 对象从三级缓存移动到二级缓存中。
+5.B 对象拿到 A 对象后 顺利完成了初始化，然后将自己放入到了一级缓存 SingletonObject 中。
+6.此时返回到 A 中，A 此时能拿到B 对象顺利完成自己的初始化。
+
+** spring 启动过程
+1.读取web.xml 文件
+2.创建 servletContext 为ioc 容器提供数组环境。
+3.出发容器初始化事件，调用 contextLoaderListener.contextInitialied 方法，在这个方法会初始化一个应用上下文
+ApplicationContext 即 spring 的 IOC 容器。ioc 容器初始化完成之后会被储存到 servletContext 中。
+4.初始化 web.xml中配置的 servlet 如 dispatcherServlet 用于匹配处理每个 servlet 请求。
+
+
+** @Async 注解原理
+

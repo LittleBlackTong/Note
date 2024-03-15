@@ -1,5 +1,16 @@
 * springmvn 知识点
 
+** springmvc 的理解
+
+spring mvn 是基于 java mvc 设计模式的轻量级 web 框架，是 spring 框架的一个模块。
+它通过一套注解让一个简单的 java 类成为请求处理的控制器，无序实现任何接口。
+
+
+** 什么是 mvc
+
+mvc 是一种软件设计典范， m 是model v 是view c 是controller
+将 数据，试图，和业务逻辑分开来组织代码。
+
 ** springMvc 的工作原理
 
 1. 客户端发起请求 直接请求到 DispatcherServlet
@@ -11,6 +22,59 @@
 7. DispaterServlet 就把返回的Model 传给View（视图渲染）
 8. 把View 返回给浏览器
 
+** 常用的注解
+
+1. @controller
+
+标记一个类为springmvc 的控制器， 除了注解 还可以实现 httprequesthandler 或者Controller 接口来实现同样的效果。
+
+2. @RequestMapping
+
+用于标识配置处理器的http请求方法，URI 等信息。才能对这个方法进行映射
+
+3. @ResponseBody
+4. @RequestBody
+5. @PathVariable
+6. @RestController 
+
+相当于 @controller + @ResponseBody 适合前后端分离的项目，返回内容JSON 隔阂死的数据
+
+7. @ExceptionHandler
+
+** springmvc 的异常处理
+
+使用系统定义好的 SimpleMappingExceptionResolver
+使用自定义异常处理
+使用异常处理注解。
+
+** spring mvc 的controller 是不是单例的
+单例模式，在多线程访问的时候有线程安全问题。
+
+
+** springmvc 的拦截器
+
+springmvc 的拦截器对应 handlerInterceptor 接口，实现该接口需要实现三个方法。
+1.前置处理（preHander 方法）该方法标识在处理器之前执行，返回值是boolean true 标识拦截通过，处理后续请求，
+false 标识拦截请求不再向下执行。
+2.后置处理器。（postHandler 方法）该方法在 处理器执行完成后执行，但是在返回 modelAndView 之前执行。可以用该更改
+返回的结果
+3.已完成处理（afterCompletion）在控制器之后执行，在chongtroller 之后执行，适合用来处理资源释放，或者日志的操作。
+
+** springmvc 怎么配置拦截器
+一种是实现handlerInterceptor 接口还有就是xml 配置
+
+```
+<!-- 配置SpringMvc的拦截器 -->
+<mvc:interceptors>
+    <bean id="myInterceptor" class="com.dabin.MyHandlerInterceptor"></bean>
+ 
+    <!-- 只拦截部分请求 -->
+    <mvc:interceptor>
+       <mvc:mapping path="/xxx.do" />
+       <bean class="com.dabin.MyHandlerInterceptorAdapter" />
+    </mvc:interceptor>
+</mvc:interceptors>
+```
 ** springMvc 的主要组件
    
 1. handler； 也就是处理器，他直接对应着 mvc 中的 c 也就是 controller层，它具体的表现形式有很多，可以是类，也可以是方法。在Controller 层中的@RequestMapping

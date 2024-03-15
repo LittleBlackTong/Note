@@ -87,3 +87,25 @@ running 状态
 
 1.start 方法来启动线程，实现真正的多线程运行。通过调用 start 方法 并没有运行，只是进入了就绪状态
 2.run 相当于线程的线程体，包含了要执行这个线程的内容，线程进入了运行状态，开始运行run 函数中的代码，run 方法结束 线程结束
+
+** 终止线程的四种方式
+
+1.程序正常执行结束
+2.使用推出标志推出线程，用volatile 声明推出的关键字，根据关键字的状态判断推出线程
+
+```
+public volatile boolean exit=false
+
+public void run（） {
+     while (!exit) {
+     // dosmoething
+    }
+}
+
+```
+3. interrupt 方法结束线程。
+（1） 线程处于阻塞状态， 调用interrupt 方法会抛出异常。需要捕获该异常之后在通过 break 来跳出，才能结束run方法
+（2） 线程未阻塞的状态， 使用 isInterrupted 判断线程的终端标志来退出循环。当使用interrupt 方法的时候终端标志就会
+设置成true 。
+
+5.

@@ -38,7 +38,7 @@ java 中的乐观锁，都是通过 cas 的机制来实现的，cas 是一种原
 5. owner 拿到锁的线程被成为 owner
 6. ！owner 当前释放锁的线程
 
-** synchronized 特点 
+** synchronized 特点
 1.synchronized 锁是非公平锁，线程先进入 contentionList 中会先自旋尝试获取锁，获取不到就直接进入 contentionList，
 对先进入队列的线程是不公平的，而且自旋的时候有可某个线程直接 ondeck 抢到线程锁资源。
 
@@ -50,3 +50,97 @@ java 中的乐观锁，都是通过 cas 的机制来实现的，cas 是一种原
 
 5.锁可以从偏向锁，升级到轻量锁，再到重量锁，这个过程叫做锁膨胀。
 
+** 实现过程
+
+1.jvm 每次队列尾部取一个线程用于锁竞争，并发情况下 contentionList 会被大量的并发线程进行cas 访问，为了降低对尾部的元素的竞争，JVM，将一部分线程移动到
+entryList 中作为候选竞争线程
+
+2.Owner 线程会在 unlock时，将 contentionList 中的的部分线程EntryList 中，并指定 entryList 中的某个线程为 OnDeck线程，把锁竞争的权利给 OnDeck
+OnDeck 需要重新竞争锁。
+
+3.ondeck 线程获取到锁的资源之后会变成 owner 线程，没有得到锁资源就仍然停留在 entryList 中，如果 Owner 线程被 wai方法阻塞，则转移到 waitSet 中。
+直到被 notify 或者notifyAll 唤醒，重新进入到 EntryList 中。
+
+4.等待线程会自旋尝试 获取锁，如果获取不到，就进入contentionList 明显对进入队列的线程是不公平的，还有一个不公平的事情就是自旋获取锁的时候可能直接抢占Ondeck线程的锁资源
+
+5. 每个对象都有一个 monitor对象，加锁就是在竞争 monitor 对象，代码快加锁则是在前后分别加上 monitorenter 和 monitorexit 来实现的，
+
+6. synchronized 是重量级锁，需要调用系统相关接口，
+
+** ReentrantLock
+
+Reentrantlock 继承lock 接口，并实现了其中定义的方法，是一种可冲入锁，除了能实现syncronizede 功能 外可以提供 响应中断锁，
+可轮询锁请求，定时锁，避免多线程死锁的方法。
+
+主要方法有
+
+1. void lock（） 方法如果锁处于空闲状态，当前线程就获取到锁
+2. boolean tryLock（） 锁可用则获取锁，并立即返回 trye 否则返回 false， 和lock 的区别的不会导致线程阻塞，可以返回做其他事情，lock 一定获取到锁。
+3. void unlock （） 当前线程释放锁，
+4. condition newCondition 条件对象等待通知组件。组件和锁绑定，当线程获取锁了之后，才能调用罪案的额 await（）而调用后线程释放锁。
+5. getHoldCount 查询当前线程保持此锁的次数，也就是执行此线程执行lock 方法的次数。
+6.getQueueLength 返回等待获取锁的线程数量。
+7.getWaitQueueLength 等待此锁相关给定刁奸的线程估计数。
+8.hasWaiters 查询是否有线程等待此锁有关给定的特定条件
+9.hasQueueThread 查询特定线程是否获取此锁
+10.hasQueuedThreads 是否有线程等待此锁
+11.isFair 是否是公平锁
+12.isHeldByCurrentThread（） 当前线程是否保持锁锁定。
+13 isLock（）是否其他线程占用
+14 lockInterruptibly 当前线程未被终端，获取锁
+15 tryLock 此锁是否有任意线程占用。
+16，tryLock（timeout ，timeunit） 给定事件没有获取锁，
+
+** Semaphore 信号量
+
+Semaphore 是一种基于计数的信号量，它可以设定一个阈值，基于此，多个线程竞争获取许可信号，做完自己的申请后归还。
+超过阈值后 线程申请会被信号量阻塞，semaphore 可以用来构建一些对象池，资源池之类的，比如数据库连接池。
+
+我们可以创建计数为1 的Semaphore 作为类似互斥锁的机制，也叫二元信号量。
+
+```
+semaphore semp =new semaphore（5）
+
+try {
+   semp.acquire ()
+   try {
+     //dosmothing
+   }cacth (Exception e) {
+   }finally () {
+     semp.release ();
+   }
+}
+
+```
+
+** AtomicInteger
+
+原子操作 integer 类，通过 cas 进行比较替换，效率很高
+
+** 可重入锁
+
+只同一线程 外层函数获得锁之后，内城递归函数仍然有获取该锁的代码，但是不受影响。 synchronized 和 reentrantLock都是可重入锁
+
+
+** 重量级锁
+
+通过内部监视器 monitor 来实现的，本质以来系统mutexLock 来实现，这种锁称为重量锁
+
+** 轻量锁
+
+** 分段锁
+** 锁优化
+1.减少锁持有事件
+2.减小颗粒度
+
+** 锁分离
+最常见的锁分离就是读写锁 ，读读不互斥 读写互斥，写写互斥。保证线程安全，同时提高性能。
+
+** 线程的基本方法
+
+1.wait 线程等待
+2.sleep 线程睡眠
+3.yield 线程让步
+4.interrupt 线程终端
+5.join 等待其他线程终止
+6.notify 唤醒线程

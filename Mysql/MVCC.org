@@ -1,0 +1,355 @@
+* MVCC 原理
+
+mvcc 多版本并发控制，顾名思义，mvcc是通过数据行的多版本管理实现数据库的并发控制。这项技术，使得
+在innoDB 的事务隔离级别下执行的一致性读操作有了保障。换言之，就是为了查询一些正在被另一个事务更新的行。
+并且可以看到他们被更新前的值。这样做查询的时候就不用等待另一个事务释放锁。
+
+
+
+** 快照读和当前读
+
+快照读又叫一致性读，读取的是快照数据。不加锁的简单select 都属于快照读，即不加锁的非阻塞读。
+
+```
+SELECT * FROM player WHERE ...
+```
+
+之所以出现快照读的情况，是基于 提高并发性能的考虑，快照读的实现是基于 MVCC 很多情况下避免加锁的操作，降低了开销。
+既然是基于多版本，那么快早读可能读到的并不一定是 数据的最新版本，而有可能是之前的历史版本。快照读的前提是隔离级别
+不是串行的级别。串行级别快照读会退化成当前读。
+
+** 当前读 
+
+当前读读取的是最新版本，读取时还要保证其他并发事务不能修改当前的记录，会读取的记录进行加锁，
+
+```
+SELECT * FROM student LOCK IN SHARE MODE; #共享锁
+SELECT * FROM student FOR UPDATE;         #排他锁
+INSERT INTO student values ...        #排他锁
+DELETE FROM student WHERE ...        #排他锁
+UPDATE student SET ...         #排他锁
+```
+
+** MVCC 实现
+
+*** 隐藏字段
+
+对于使用 innoDB 存储引擎的表来说，他的 聚集索引记录都包含两个必要的隐藏列。
+trx_id: 每次一个事务对某条聚集索引记录进行改动时，都会把该事务的 id 赋值给 trx_id 隐藏列。
+roll_pointer: 每次对某条聚集索引记录进行改动时，都会把旧的版本写入到 undolog 中，然后这个隐藏
+列旧相当于一个 指针，可以通过他来招该记录修改前的信息。
+
+*** undolog 版本链
+
+student 表如下：
+
+```
+SELECT * FROM student ;
+/*
++----+--------+--------+
+| id | name   | class  |
++----+--------+--------+
+|  1 | 张三   | 一班    |
++----+--------+--------+
+1 row in set (0.07 sec)
+*/
+```
+
+假设插入该记录的事务id 为 8 那么此刻该条记录的示意图如下：
+[[file:~/文档/StudyFile/Note/Image/v2-2ea9ce6e69d62f822186f82e38068f56_720w.png][插入undo]]
+
+insert undo log 只在 事务回滚的时候起作用，当事务提交后，该类型的 undo日志就没用了，它占用的 undologsegment 也会被系统回收。
+
+假设之后两个事务id分别为10、20的事务对这条记录进行UPDATE 操作，操作流程如下:
+
+[[file:~/文档/StudyFile/Note/Image/v2-023c433ee1d6e921b7e0278045db808d_720w.png][事务插入数据]]
+
+能不能在两个事务中交叉更新同一条记录呢？
+不能!这就是一个事务修改了另一个未提交事务修改过的数据，脏写。
+InnoDB使用锁来保证不会有脏写情况的发生，也就是在第一个事务更新了某条记录后，就会给这条记录加锁，
+
+另一个事务再次更新时就需要等待第一个事务提交了，把锁释放之后才可以继续更新。
+每次对记录进行改动，都会记录一条undo日志，每条undo日志也都有一个roll_pointer属性
+（INSERT操作对应的undo日志没有该属性，因为该记录并没有更早的版本)，可以将这些undo日志都连起来，串成一个链表:
+
+[[file:~/文档/StudyFile/Note/Image/v2-090a265cec3fa34fb68cab2d27d0b975_720w.png][更新记录undolog]]
+
+对该记录每次更新后，都会将旧值放到一条undo日志中，就算是该记录的一个旧版本，随着更新次数的增多，所有的版本都会被roll_pointer属性连接成一个链表，
+把这个链表称之为版本链，版本链的头节点就是当前记录最新的值。每个版本中还包含生成该版本时对应的事务id。
+
+
+** readView
+
+在 mvcc 机制中，多个事务对同一个行记录进行更新会产生多个历史快照，这些历史快照保存在 undolog 里。
+如果一个事务想要查询这个行记录每就绪要读取哪个版本的行记录。 这是就需要用到 readView 了，帮解决可见性问题。
+
+readView 就是事务在使用 mvcc 机制 进行快照读操作时产生的读视图。当事务启动时，会生成数据库系统当前的一个快照。
+innoDB 为 每个事务构造了一个数组，用来记录并维护当前活跃事务的id（活跃指的是启动来还未提交）
+
+
+** 设计思路
+
+使用readuncomminted  隔离级别的事务，由于可以读取到 未提交的事务修改过的记录，所以直接读取最新版的记录就好了。
+使用 serializable 级别的事务， innoDB 规定了使用加锁的方式来访问记录。
+使用 read commited 和 repeatable read 级别的事务提交，都必须保证读取到了已提交的事务修 过的记录。加入另一个事务已经修改了记录，但是
+尚未提交，是不能直接读取最新版本的记录的，核心问题就是需要判断一下版本链中的哪个版本是当前事务可见的，这个是 readView 要解决的问题。
+这个ereadView 中包含四个比较重要的内容，分别如下：
+1.createor——trx——id 创建这个readvied 的事务ID。
+只有在对表中记录做改动时（执行 insert delete update 这些语句时）才会为事务分配事务id，否则在一个只读事务id值都是默认为0
+
+2. trx_ids, 标识在生成readVid时当前系统中活跃的读写事务id 列表。
+3. up_limit_id 活跃事务中最小的 事务ID
+4. low_limit_id  表示要生成 readView时系统中应该分配给下一个事务的id值。low_limit 时系统最大道德事务id值
+
+注意: low_limit_id并不是trx_ids中的最大值，事务id是递增分配的。比如，现在有id为1，2，3这三个事务，
+之后id为3的事务提交了。那么一个新的读事务在生成ReadView时，trx_ids就包括1和2，up_limit_id的值就是1，
+low_limit_id的值就是4。
+
+
+** ReadView 的规则
+
+有了这个ReadView，这样在访问某条记录时，只需要按照下边的步骤判断记录的某个版本是否可见。
+如果被访问版本的trx_id属性值与ReadView中的 creator_trx_id 值相同，意味着当前事务在访问它自己修改过的记录，
+所以该版本可以被当前事务访问。20可以访问自己
+如果被访问版本的trx_id属性值小于ReadView中的 up_limit_id值，表明生成该版本的事务在当前事务生成ReadView
+前已经提交，所以该版本可以被当前事务访问。
+如果被访问版本的trx_id属性值大于或等于ReadView中的 low_limit_id值，表明生成该版本的事务在当前事务生成
+ReadView后才开启，所以该版本不可以被当前事务访问。
+如果被访问版本的trx_id属性值在ReadView的 up_limit_id 和 low_limit_id之间，那就需要判断一下trx_id
+属性值是不是在 trx_ids 列表中。
+如果在，说明创建ReadView时生成该版本的事务还是活跃的，该版本不可以被访问。
+如果不在，说明创建ReadView时生成该版本的事务已经被提交，该版本可以被访问
+
+** MVCC 整体操作流程
+
+首先获取自己的版本号，也就是 事务ID；
+获取 readView；
+查询得到的数据，然后与 ReadView中的事务版本号进行比较；
+如果不符合 readView 规则，就需要 undolog 中获取历史快照；
+最后返回符合规则的数据。
+如果某个版本的数据对当前事务不可见的话，那就顺着版本链找到下一个版本的数据，继续按照上边的步骤判断可见性，
+依此类推，直到版本链中的最后一个版本。如果最后一个版本也不可见的话，那么就意味着该条记录对该事务完全不可见，
+查询结果就不包含该记录。InnoDB中，MVCC是通过Undo Log + Read View进行数据读取，Undo Log保存了历史快照，
+而Read View规则帮我们判断当前版本的数据是否可见。在隔离级别为读已提交（Read Committed）时，
+一个事务中的每一次 SELECT 查询都会重新获取一次Read View。
+
+[[file:~/文档/StudyFile/Note/Image/v2-ae018879c6e5f9af6aa79ab9ef5de736_720w.png][读提交]]
+
+注意，此时同样的查询语句都会重新获取一次Read View，这时如果Read View 不同，就可能产生不可重复读或者幻读的情况。
+当隔离级别为可重复读的时候，就避免了不可重复读，这是因为一个事务只在第一次SELECT的时候会获取一次Read View，而后面
+所有的SELECT都会复用这个Read View，如下表所示:
+
+[[file:~/文档/StudyFile/Note/Image/v2-aa7905e4c0f095e37fe53f462a1041a4_720w.png][重复读]]
+假设现在 student 表中只有一条由事务id为8的事务插入的一条记录：
+```
+SELECT * FROM student ;
+/*
++----+--------+--------+
+| id | name   | class  |
++----+--------+--------+
+|  1 | 张三   | 一班    |
++----+--------+--------+
+1 row in set (0.07 sec)
+*/
+```
+MVCC只能在READ COMMITTED和REPEATABLE READ两个隔离级别下工作。
+READ COMMITTED和REPEATABLE READ生成ReadView的时机是不同的。
+
+** read committed 隔离级别
+
+```
+READ COMMITTED ：每次读取数据前都生成一个ReadView
+现在有两个 事务id 分别为 10 、 20 的事务在执行
+# Transaction 10
+BEGIN;
+UPDATE student SET name="李四" WHERE id=1;
+UPDATE student SET name="王五" WHERE id=1;
+​
+# Transaction 20
+BEGIN;
+# 更新了一些别的表的记录(为了分配事务id)
+```
+
+说明:事务执行过程中，只有在第一次真正修改记录时(比如使用INSERT、DELETE、UPDATE语句)，
+才会被分配一个单独的事务id，这个事务id是递增的。所以我们才在事务20中更新一些别的表的记录，
+目的是让它分配事务id。
+
+[[file:~/文档/StudyFile/Note/Image/v2-58bcce7128597eab106be03489c328b2_720w.jpg][读提交undolog]]
+
+假设现在有个使用 read committer 隔离级别的事务开始执行
+
+```
+# 使用READ COMMITTED隔离级别的事务
+​
+BEGIN;
+# SELECT1：Transaction 10、20未提交
+SELECT * FROM student WHERE id = 1; # 得到的列name的值为'张三'
+```
+
+这个·SELECT1·的执行过程如下:
+步骤1：在执行SELECT语句时会先生成一个ReadView ，ReadView的trx_ids列表的内容就是[10，20],
+up_limit_id为10, low_limit_id为21, creator_trx_id为0。
+步骤2：从版本链中挑选可见的记录，从图中看出，最新版本的列name的内容是’王五’，该版本的trx_id值为10，在trx_ids列表内，
+所以不符合可见性要求，根据roll_pointer跳到下一个版本
+步骤3：下一个版本的列name的内容是’李四’，该版本的trx_id值也为10，也在trx_ids列表内，所以也不符合要求，
+继续跳到下一个版本
+步骤4：下一个版本的列name的内容是’张三’，该版本的trx_id值为8，小于ReadView中的up_limit_id值10，所以这个版本是符合要求的，
+最后返回给用户的版本就是这条列name为‘张三’的记录
+
+
+之后，把 事务id 为 10 的事务提交一下：
+
+```
+# Transaction 10
+BEGIN;
+​
+UPDATE student SET name="李四" WHERE id=1;
+UPDATE student SET name="王五" WHERE id=1;
+​
+COMMIT;
+```
+然后再到 事务id 为 20 的事务中更新一下表 student 中 id 为 1 的记录：
+
+```
+# Transaction 20
+BEGIN;
+# 更新了一些别的表的记录
+...
+UPDATE student SET name="钱七" WHERE id=1;
+UPDATE student SET name="宋八" WHERE id=1;
+```
+
+此刻，表student中 id 为 1 的记录的版本链就长这样：
+
+[[file:~/文档/StudyFile/Note/Image/v2-e8cacc5515fb9ab1353a6e136de69516_720w.png][undolog]]
+
+这个SELECT2的执行过程如下:
+
+步骤1∶在执行SELECT语句时会又会单独生成一个ReadView，该ReadView的trx_ids列表的内容就是[20]，up_limit_id为20，low_limit_id为21, creator_trx_id为0。
+步骤2:从版本链中挑选可见的记录，从图中看出，最新版本的列name的内容是’宋八’，该版本的trx_id值为20，在trx_ids列表内，所以不符合可见性要求，根据roll_pointer跳到下一个版本。
+步骤3∶下一个版本的列name的内容是‘钱七’，该版本的trx_id值为20，也在trx_ids列表内，所以也不符合要求，继续跳到下一个版本
+步骤4∶下一个版本的列name的内容是’王五’，该版本的trx_id值为10，小于ReadView中的up_limit_id值20，所以这个版本是符合要求的，最后返回给用户的版本就是这条列name为’王五’的记录。
+以此类推，如果之后事务id为20的记录也提交了，再次在使用READ COMMITED 隔离级别的事务查询表student中id值为1的记录时，得到的结果就是’宋八’了，具体流程我们就不分析了。
+
+强调:使用READ COMMITTED隔离级别的事务在每次查询开始时都会生成一个独立的ReadView
+
+```
+# 使用READ COMMITTED隔离级别的事务
+BEGIN;
+​
+# SELECT1：Transaction 10、20均未提交
+SELECT * FROM student WHERE id = 1; # 得到的列name的值为'张三'
+​
+# SELECT2：Transaction 10提交，Transaction 20未提交
+SELECT * FROM student WHERE id = 1; # 得到的列name的值为'王五'
+```
+这个SELECT2的执行过程如下:
+
+步骤1∶在执行SELECT语句时会又会单独生成一个ReadView，该ReadView的trx_ids列表的内容就是[20]，up_limit_id为20，low_limit_id为21, creator_trx_id为0。
+步骤2:从版本链中挑选可见的记录，从图中看出，最新版本的列name的内容是’宋八’，该版本的trx_id值为20，在trx_ids列表内，所以不符合可见性要求，根据roll_pointer跳到下一个版本。
+步骤3∶下一个版本的列name的内容是‘钱七’，该版本的trx_id值为20，也在trx_ids列表内，所以也不符合要求，继续跳到下一个版本
+步骤4∶下一个版本的列name的内容是’王五’，该版本的trx_id值为10，小于ReadView中的up_limit_id值20，所以这个版本是符合要求的，最后返回给用户的版本就是这条列name为’王五’的记录。
+以此类推，如果之后事务id为20的记录也提交了，再次在使用READ COMMITED 隔离级别的事务查询表student中id值为1的记录时，得到的结果就是’宋八’了，具体流程我们就不分析了。
+
+强调:使用READ COMMITTED隔离级别的事务在每次查询开始时都会生成一个独立的ReadView
+
+
+** repeatable read 隔离级别
+
+使用 REPEATABLE READ 隔离级别的事务来说，只会在第一次执行查询语句时生成一个 ReadView ，之后的查询就不会重复生成了。
+比如，系统里有两个 事务id 分别为 10 、 20 的事务在执行：
+
+```
+# Transaction 10
+BEGIN;
+UPDATE student SET name="李四" WHERE id=1;
+UPDATE student SET name="王五" WHERE id=1;
+​
+# Transaction 20
+BEGIN;
+# 更新了一些别的表的记录
+```
+
+假设现在有一个使用 REPEATABLE READ 隔离级别的事务开始执行：
+
+```
+# 使用REPEATABLE READ隔离级别的事务
+BEGIN;
+​
+# SELECT1：Transaction 10、20未提交
+SELECT * FROM student WHERE id = 1; # 得到的列name的值为'张三'
+```
+
+这个SELECT1的执行过程如下:
+
+步骤1:在执行·SELECT·语句时会先生成一个ReadView，ReadView的trx_ids列表的内容就是[10，20]，up_limit_id为10, low_limit_id为21, creator_trx_id为0。
+
+步骤2:然后从版本链中挑选可见的记录，从图中看出，最新版本的列name的内容是’王五’，该版本的trx_id值为10，在trx_ids列表内，所以不符合可见性要求，根据roll_pointer跳到下一个版本。
+
+步骤3:下一个版本的列name的内容是’李四’，该版本的trx_id值也为10，也在trx_ids列表内，所以也不符合要求，继续跳到下一个版本。
+
+步骤4∶下一个版本的列name的内容是’张三’，该版本的trx_id值为8，小于ReadView中的up_limit_id值10，所以这个版本是符合要求的，最后返回给用户的版本就是这条列name为’张三’的记录
+
+之后，我们把事务id为10的事务提交一下，就像这样:
+
+
+```
+# Transaction 10
+BEGIN;
+​
+UPDATE student SET name="李四" WHERE id=1;
+UPDATE student SET name="王五" WHERE id=1;
+​
+COMMIT;
+​
+```
+然后再到 事务id 为 20 的事务中更新一下表 student 中 id 为 1 的记录：
+
+```
+# Transaction 20
+BEGIN;
+​
+# 更新了一些别的表的记录
+...
+UPDATE student SET name="钱七" WHERE id=1;
+UPDATE student SET name="宋八" WHERE id=1;
+```
+
+此刻，表student 中 id 为 1 的记录的版本链长这样：
+
+[[file:~/文档/StudyFile/Note/Image/v2-e326677948799c473490cc5d28efbed4_720w.png][undolog]]
+
+然后再到刚才使用 REPEATABLE READ 隔离级别的事务中继续查找这个id 为 1 的记录，如下：
+
+```
+# 使用REPEATABLE READ隔离级别的事务
+BEGIN;
+​
+# SELECT1：Transaction 10、20均未提交
+SELECT * FROM student WHERE id = 1; # 得到的列name的值为'张三'
+​
+# SELECT2：Transaction 10提交，Transaction 20未提交
+SELECT * FROM student WHERE id = 1; # 得到的列name的值仍为'张三'
+
+```
+
+ELECT2的执行过程如下:
+
+步骤1:因为当前事务的隔离级别为REPEATABLE READ，而之前在执行SELECT1时已经生成过ReadView了，所以此时直接复用之前的ReadView，
+之前的ReadView的trx_ids列表的内容就是[10，20]，up_limit_id为10，low_limit_id为21, creator_trx_id为0。
+步骤2:然后从版本链中挑选可见的记录，从图中可以看出，最新版本的列name的内容是’宋八’，该版本的trx_id值为20，在trx_ids列表内，
+所以不符合可见性要求，根据roll_pointer跳到下一个版本
+步骤3:下一个版本的列name的内容是’钱七’，该版本的trx_id值为20，也在trx_ids列表内，所以也不符合要求，继续跳到下一个版本
+步骤4∶下一个版本的列name的内容是’王五’，该版本的trx_id值为10，而trx_ids列表中是包含值为10的事务id的，所以该版本也不符合要求，
+同理下一个列name的内容是‘李四’的版本也不符合要求。继续跳到下一个版本
+步骤5:下一个版本的列name的内容是’张三’，该版本的trx_id值为8，小于ReadView中的up_limit_id值10，所以这个版本是符合要求的，
+最后返回给用户的版本就是这条列c为‘张三’的记录。
+两次SELECT查询得到的结果是重复的，记录的列c值都是‘张三’，这就是可重复读的含义。如果我们之后再把事务id为20的记录提交了，
+然后再到刚才使用REPEATABLE READ隔离级别的事务中继续查找这个id为1的记得到的结果还是‘张三’。
+
+
+** 如何解决幻读
+
+接下来说明InnoDB 是如何解决幻读的。
+假设现在表 student 中只有一条数据，数据内容中，主键 id=1，隐藏的 trx_id=10，它的 undo log 如下图所示。
+

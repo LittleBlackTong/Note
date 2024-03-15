@@ -1,0 +1,146 @@
+* ThreadLocal
+
+** 1. ThreadLocal 是什么
+
+名字来看叫做线程本地变量，thredlocal 中填充的是当前线程的变量，该变量对其他线程而言是封闭且隔离的，ThreadLocal 为变量在每个线程中
+创建一个副本，每个线程都可以访问自己的副本变量。
+
+*** 使用场景
+1. 对象跨曾传递，使用 threadLocal 可以避免多次传递，打破层之间的约束。
+2. 线程间进行数据隔离
+3. 进行事务操作，用于存储线程事务信息。
+4. 数据库链接，session 会话管理。
+
+
+*** 源码分析
+
+```
+/**
+     * Sets the current thread's copy of this thread-local variable
+     * to the specified value.  Most subclasses will have no need to
+     * override this method, relying solely on the {@link #initialValue}
+     * method to set the values of thread-locals.
+     *
+     * @param value the value to be stored in the current thread's copy of
+     *        this thread-local.
+     */
+    public void set(T value) {
+        //首先获取当前线程对象
+        Thread t = Thread.currentThread();
+        //获取线程中变量 ThreadLocal.ThreadLocalMap
+        ThreadLocalMap map = getMap(t);
+        //如果不为空，
+        if (map != null)
+            map.set(this, value);
+        else
+            //如果为空，初始化该线程对象的map变量，其中key 为当前的threadlocal 变量
+            createMap(t, value);
+    }
+
+    /**
+     * Create the map associated with a ThreadLocal. Overridden in
+     * InheritableThreadLocal.
+     *
+     * @param t the current thread
+     * @param firstValue value for the initial entry of the map
+     */
+//初始化线程内部变量 threadLocals ，key 为当前 threadlocal
+    void createMap(Thread t, T firstValue) {
+        t.threadLocals = new ThreadLocalMap(this, firstValue);
+    }
+
+       /**
+         * Construct a new map initially containing (firstKey, firstValue).
+         * ThreadLocalMaps are constructed lazily, so we only create
+         * one when we have at least one entry to put in it.
+         */
+        ThreadLocalMap(ThreadLocal<?> firstKey, Object firstValue) {
+            table = new Entry[INITIAL_CAPACITY];
+            int i = firstKey.threadLocalHashCode & (INITIAL_CAPACITY - 1);
+            table[i] = new Entry(firstKey, firstValue);
+            size = 1;
+            setThreshold(INITIAL_CAPACITY);
+        }
+
+
+ static class Entry extends WeakReference<ThreadLocal<?>> {
+            /** The value associated with this ThreadLocal. */
+            Object value;
+
+            Entry(ThreadLocal<?> k, Object v) {
+                super(k);
+                value = v;
+            }
+        }
+```
+
+threadLocalMap 为threLocal 的一个静态内部类，里面定义了 entry来保存数据，而继承是若引用， 在entry 内部使用 threadlocal 作为key，
+使用我们设置的 value 作为value，
+ 每个线程都有一个 threadlocal。threadLocalMap 变量，存取值的时候是从 容器中来存取。
+
+```
+/**
+     * Returns the value in the current thread's copy of this
+     * thread-local variable.  If the variable has no value for the
+     * current thread, it is first initialized to the value returned
+     * by an invocation of the {@link #initialValue} method.
+     *
+     * @return the current thread's value of this thread-local
+     */
+    public T get() {
+        Thread t = Thread.currentThread();
+        ThreadLocalMap map = getMap(t);
+        if (map != null) {
+            ThreadLocalMap.Entry e = map.getEntry(this);
+            if (e != null) {
+                @SuppressWarnings("unchecked")
+                T result = (T)e.value;
+                return result;
+            }
+        }
+        return setInitialValue();
+    }
+
+```
+
+先获取当前线程，然后通过 key 获取threadLocal 设置的value 
+
+
+** 内存泄漏问题
+
+```
+**
+         * The entries in this hash map extend WeakReference, using
+         * its main ref field as the key (which is always a
+         * ThreadLocal object).  Note that null keys (i.e. entry.get()
+         * == null) mean that the key is no longer referenced, so the
+         * entry can be expunged from table.  Such entries are referred to
+         * as "stale entries" in the code that follows.
+         */
+        static class Entry extends WeakReference<ThreadLocal<?>> {
+            /** The value associated with this ThreadLocal. */
+            Object value;
+
+            Entry(ThreadLocal<?> k, Object v) {
+                super(k);
+                value = v;
+            }
+        }
+```
+
+thread local 是一个若引用，当为null 时会被垃圾回收。
+
+
+突然 threadLocal 是 null 了，也就是要被垃圾回收器回收了，但是此时我们的 threadLocalMap 生命周期和 thread 相同，他不会回收，
+这时就出现了一个现象 threadlocalmap 的key 没了，但是 value 还在，这就造成了内存泄漏。
+
+解决办法，使用完 threadlocal 后执行remove 操作，避免内存泄漏。
+
+线程池可以达到线程复用的目的，使用完thread local 一定要清楚，不然这个value 会一直在。 可能导致业务逻辑出错。
+
+** 为什么key 是弱引用。
+
+如果使用了强引用，当threadLocal 对象被回收，threadlocalmap 本身还持有threadlocal 的强引用，如果没有手动删除这个key threadlocal 不会被回收，
+所以只要线程不消亡，threadlocalmap 引用对象就不会被回收，会导致 内存泄漏。
+
+
