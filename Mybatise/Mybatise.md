@@ -94,6 +94,15 @@
 > 以及 执行的 sql 生成一级缓存的 key 值
 
 
+6. Mybatis 二级缓存
+
+mybatis 通过二级缓存来提升数据检索效率，来避免每一次数据查询都查询数据库，一级缓存是sql session 级别的缓存，每一个
+用户查询的时候使用 sqlsession 的本地缓存里面数据，而不是从数据库里面读取，如果想要实现跨 sqlsession 级别的缓存，一级缓存无法实现，
+当多个用户查询数据的时候，就可以把数据放在二级缓存里面。
+
+一级缓存，sqlsession 对象中有个 excutor excutor 会先到 一级缓存（localcache）里面区查，查到了直接返回，没有查到再去数据库中查询。
+二级缓存则是引入了 cachingExecutor 装饰器， 在进行查询的时候 会先用区 mapper namespace 二级缓存里面先查询。全局缓存跨 session。
+
 
 
 

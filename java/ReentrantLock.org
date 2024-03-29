@@ -1,0 +1,71 @@
+* ReentrantLock
+
+** reentrantLock 特点
+
+1. 锁实现依赖 AQS
+2. 支持响应中断，超时，尝试获取锁
+3. 必须调用 unlock（）释放锁
+4. 公平锁和 非公平锁
+5. 可以关联多个队列条件
+6. 可重入锁
+
+** 继承关系 
+reentrantLock 实现了 lock 接口，lock 接口中定义了 lock 与 unlock  相关操作，并且还存在new condition 方法，标识生成条件。
+
+** 内部类
+
+retrantLock 内部有三个内部类，并且三个内部类都是紧密相连的，下边先看三个类的关系
+
+AbastraceQueuedSynchronizer
+          继承
+           
+          Sync
+     继承          继承
+NonfairSync    FairSync
+
+
+AQS 提供了大量用于自定义类，通过修改 state字段，实现多线程的共享模式和独占模式， 自定义同步器需要实现一下方法。
+
+protected boolean isHeldExclusively() 线程是否在独占资源
+
+protected boolean tryAcquire(int arg) 独占方式尝试获取锁
+
+protected boolean tryRelease(int arg) 独占方式释放锁，成功返回true 失败返回true
+
+protected int tryAcquireShared(int arg) 共享方式获取锁次数
+
+protected boolean tryReleaseShared(int arg) 共享方式释放锁次数
+
+
+** 非公平锁实现流程
+
+[[file:~/文档/StudyFile/Note/Image/20201111204045255.png][非公平锁实现流程]]
+
+1. 调用 lock 方法加锁
+2. 通过 cas 设置 1 锁的状态，如果获取锁成功，那么设置当前线程为占用的线程 返回获取锁成功
+2. 如果没有修改成功，调用 acquire（） 调用 nonfairTryAcquire方法
+3. 获取当前state 的状态，如果是 0 当前没有线程占用锁，那么就进行cas 设置锁状态，设置当前占用线程，返回成功。
+4. 如果当前占用的线程 就是本线程，那么计数加一，标识重入设置 state 的值。
+5. 否则返回失败，失败的化 调用 addWaiter 把当前线程组装成一个node 加到队列的尾部。
+6. 执行 aqs 的 acquireQueued  循环遍历 node 节点
+
+** 核心函数
+
+公平锁
+
+nonFairTryAcquire （）
+
+1. 获取state 状态，如果没有其他锁占用，那么 cas 设置state 状态， 设置当前线程，返回成功
+
+2. 如果被占用，那么判断当前线程是不是锁定线程，如果是那就说明重入了，state +1 如果不是 返回 false;
+
+
+tryRelease ()
+
+1.如果当前线程不是独占线程，抛出异常
+2.state -1 将独占线程清空，设置标识为 0
+
+非公平锁
+tryAcquire（）
+获取锁状态，如果state =0 队列里没有其他等待线程， cas 设置state 标识成占用，设置当前线程独占，
+2如果被占用，那么判断当前线程是不是锁定线程，如果是那就说明重入了，state +1 如果不是 返回 false;
